@@ -12,6 +12,7 @@ For training from scratch in a single machine with multiple GPUs, please follow 
 
 ```bash
 CORPUS_PATH=
+OUTPUT_PATH=
 
 python -m torch.distributed.launch \
     --nproc_per_node=$1 R2D2_trainer.py --batch_size 16 \
@@ -22,6 +23,7 @@ python -m torch.distributed.launch \
     --vocab_path data/en_bert/bert-base-uncased-vocab.txt \
     --config_path data/en_bert/config.json \
     --epoch 10 \
+    --output_dir $OUTPUT_PATH \
     --window_size 4 \
     --input_type ids
 ```
@@ -30,6 +32,7 @@ python -m torch.distributed.launch \
 
 ```bash
 CORPUS_PATH=
+OUTPUT_PATH=
 
 python -m trainer.R2D2_trainer \
     --batch_size 16 \
@@ -40,7 +43,7 @@ python -m trainer.R2D2_trainer \
     --vocab_path data/en_bert/bert-base-uncased-vocab.txt \
     --config_path data/en_bert/config.json \
     --epoch 10 \
-    --output_dir transformer_models/mwoz22 \
+    --output_dir $OUTPUT_PATH \
     --input_type txt
 ```
 
