@@ -55,3 +55,5 @@ python -m trainer.R2D2_trainer \
 ```bash
 
 ```
+
+test access settings
