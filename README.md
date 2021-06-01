@@ -17,7 +17,7 @@ OUTPUT_PATH=
 python -m torch.distributed.launch \
     --nproc_per_node=$1 R2D2_trainer.py --batch_size 16 \
     --min_len 2 \
-    --max_len 16 \
+    --max_batch_len 512 \
     --max_line -1 \
     --corpus_path $CORPUS_PATH \
     --vocab_path data/en_bert/bert-base-uncased-vocab.txt \
@@ -37,7 +37,7 @@ OUTPUT_PATH=
 python -m trainer.R2D2_trainer \
     --batch_size 16 \
     --min_len 2 \
-    --max_len 16 \
+    --max_batch_len 512 \
     --max_line -1 \
     --corpus_path $CORPUS_PATH \
     --vocab_path data/en_bert/bert-base-uncased-vocab.txt \
