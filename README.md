@@ -1,6 +1,6 @@
 # R2D2 
 
-Paper 
+This is the official code for paper titled "R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling". The model code will be released soon.
 
 ## Data
 
@@ -55,8 +55,3 @@ python -m trainer.R2D2_trainer \
 ```bash
 
 ```
-
-
-# Idea
-
-Syntax-based SMT models: `Tree-to-tree`
