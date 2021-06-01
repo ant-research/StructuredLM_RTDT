@@ -1,6 +1,6 @@
 # R2D2 
 
-Paper 
+This is the official code for paper titled "R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling".
 
 ## Data
 
