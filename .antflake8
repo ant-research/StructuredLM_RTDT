@@ -1,0 +1,6 @@
+[antflake8]
+max-line-length = 120
+exclude = .git,__pycache__,personal,__init__.py
+select = E, F, C
+extend-ignore = E203, W503
+ignore=W503

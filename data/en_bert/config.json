@@ -1,0 +1,28 @@
+{
+  "architectures": [
+    "Bert"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "embedding_dim": 192,
+  "hidden_size": 768,
+  "initializer_range": 0.02,
+  "intermediate_size": 3072,
+  "max_role_embeddings": 3,
+  "num_attention_heads": 12,
+  "num_hidden_layers": 3,
+  "type_vocab_size": 2,
+  "vocab_size": 30522,
+  "encoder_num_hidden_layers": 3,
+  "pad_token_id": 0,
+  "bos_token_id": 4,
+  "eos_token_id": 5,
+  "cls_token_id": 101,
+  "sum_token_id": 7,
+  "mask_token_id": 103,
+  "nsp_token_id": 8,
+  "tag_token_id": 9,
+  "policy_token_id": 6,
+  "window_size": 4
+}
