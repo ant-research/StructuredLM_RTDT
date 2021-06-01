@@ -216,5 +216,3 @@ if __name__ == '__main__':
 
     trainer.train(dataloader, optimizer, scheduler, log_step=args.log_step, save_step=args.save_step,
                   output_dir=args.output_dir, epochs=args.epochs)
-
-    # change test
