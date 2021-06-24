@@ -95,15 +95,15 @@ class R2D2(R2D2Base):
             layer = len(table_size) - 1
             assert layer == min(current_step + 1, self.window_size)
             for pos in range(table_size[layer]):
-                if table.table(layer, pos).c_ij is None:
+                if table.table(layer, pos).e_ij is None:
                     # check if conflict with atomic spans
                     total_group += 1
                     candidates_local = []
                     for h_i in range(0, layer):
-                        assert table.table(h_i, pos).c_ij is not None
-                        assert table.table(layer - 1 - h_i, pos + h_i + 1).c_ij is not None
-                        tensor_batches.append(table.table(h_i, pos).c_ij)
-                        tensor_batches.append(table.table(layer - 1 - h_i, pos + h_i + 1).c_ij)
+                        assert table.table(h_i, pos).e_ij is not None
+                        assert table.table(layer - 1 - h_i, pos + h_i + 1).e_ij is not None
+                        tensor_batches.append(table.table(h_i, pos).e_ij)
+                        tensor_batches.append(table.table(layer - 1 - h_i, pos + h_i + 1).e_ij)
                         left_cell, right_cell = table.table(h_i, pos), table.table(layer - 1 - h_i, pos + h_i + 1)
                         pair = DotDict()
                         pair.left = left_cell
@@ -142,7 +142,7 @@ class R2D2(R2D2Base):
             nodes = []
             for col in range(seq_lens[batch_i]):
                 node = ChartNode(0, col)
-                node.c_ij = input_list[col][batch_i]
+                node.e_ij = input_list[col][batch_i]
                 node._log_p_sum = torch.zeros([1, ]).to(self.device)
                 nodes.append(node)
             chart_tables.append(ChartTable(nodes))
@@ -167,7 +167,7 @@ class R2D2(R2D2Base):
             _, s_log_p_sum_indices = log_p_sum_ijk.sort(dim=1, descending=True)
             log_p_sum_ijk = log_p_sum_ijk.unsqueeze(2)
             for node_i, node in enumerate(node_batch):
-                node.c_ij = e_ij[node_i]
+                node.e_ij = e_ij[node_i]
                 for pair_i, pair in enumerate(candidates[node_i]):
                     pair.log_p_sum = log_p_sum_ijk[node_i][pair_i]
                 _candidates = [candidates[node_i][_idx] for _idx in s_log_p_sum_indices[node_i]]

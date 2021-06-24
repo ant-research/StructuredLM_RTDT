@@ -2,10 +2,10 @@
   "architectures": [
     "Bert"
   ],
+  "model_type": "bert",
   "attention_probs_dropout_prob": 0.1,
   "hidden_act": "gelu",
   "hidden_dropout_prob": 0.1,
-  "embedding_dim": 192,
   "hidden_size": 768,
   "initializer_range": 0.02,
   "intermediate_size": 3072,

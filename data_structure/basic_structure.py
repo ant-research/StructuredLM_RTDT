@@ -99,7 +99,7 @@ class ChartNode:
         self.height = height
         self.pos = pos
         self.candidates = []
-        self.c_ij = vec
+        self.e_ij = vec
         self.pruned = False
         self.is_terminal = False
         self.log_p_ij = None
@@ -123,7 +123,7 @@ class ChartNode:
     @property
     def children(self):
         if len(self.candidates) > 0:
-            return self.candiates[0].left, self.candidates[0].right
+            return self.candidates[0].left, self.candidates[0].right
         else:
             return None, None
 
@@ -193,12 +193,12 @@ class ChartTable:
             assert pos == 0
             left_tensor = left_default
         else:
-            left_tensor = left_node.c_ij
+            left_tensor = left_node.e_ij
         if right_node is None:
             assert pos == len(self._node_table[0]) - 1
             right_tensor = right_default
         else:
-            right_tensor = right_node.c_ij
+            right_tensor = right_node.e_ij
         return left_tensor, right_tensor
 
     def _gather(self, pos):

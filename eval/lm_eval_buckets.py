@@ -61,20 +61,15 @@ class BiLanguageModelEval:
 
 
 class BatchR2D2Predictor:
-    def __init__(self, config_path, vocab_path, model_path, device, max_batch_len=128):
+    def __init__(self, config_path, vocab_dir, model_path, device, max_batch_len=128):
         config = AutoConfig.from_pretrained(config_path)
         self._model = R2D2(config)
-        state_dict = torch.load(model_path, map_location=lambda storage, loc: storage)
-        trans_state_dict = {}
-        for key, val in state_dict.items():
-            key = key.replace('module.', '')
-            trans_state_dict[key] = val
-        self._model.load_state_dict(trans_state_dict)
+        self._model.from_pretrain(model_path)
         self._model.to(device)
         self._device = device
         self._model.eval()
         self._max_batch_size = max_batch_len
-        self._tokenizer = AutoTokenizer.from_pretrained(vocab_path, config=config, use_fast=True)
+        self._tokenizer = AutoTokenizer.from_pretrained(vocab_dir, config=config, use_fast=True)
 
     def __call__(self, ids, bucket_size, get_bucket_id):
         batch_size = max(1, self._max_batch_size // len(ids))
@@ -117,11 +112,11 @@ class BatchR2D2Predictor:
                     left = input_ids[i * 2]
                     right = input_ids[i * 2 + 1]
                     if len(left) > 0:
-                        left_tensor = tables[i * 2].root.vec
+                        left_tensor = tables[i * 2].root.e_ij
                     else:
                         left_tensor = self._model.bos_vec
                     if len(right) > 0:
-                        right_tensor = tables[i * 2 + 1].root.vec
+                        right_tensor = tables[i * 2 + 1].root.e_ij
                     else:
                         right_tensor = self._model.eos_vec
                     left_batch.append(left_tensor)
@@ -140,7 +135,7 @@ class BatchR2D2Predictor:
 
 
 class ChartModelPredictor:
-    def __init__(self, config_path, vocab_path, model_path, device):
+    def __init__(self, config_path, vocab_dir, model_path, device):
         config = AutoConfig.from_pretrained(config_path)
         self._model = R2D2(config)
         state_dict = torch.load(model_path, map_location=lambda storage, loc: storage)
@@ -152,7 +147,7 @@ class ChartModelPredictor:
         self._model.to(device)
         self._device = device
         self._model.eval()
-        self._tokenizer = AutoTokenizer.from_pretrained(vocab_path, config=config, use_fast=True)
+        self._tokenizer = AutoTokenizer.from_pretrained(vocab_dir, config=config, use_fast=True)
 
     def __call__(self, ids, mask_pos, tgt):
         left = ids[:mask_pos]
@@ -172,11 +167,11 @@ class ChartModelPredictor:
             if max_len > 0:
                 _, tables = self._model(input_tensor, attn_mask)
             if len(left) > 0:
-                left_tensor = tables[0].root.vec
+                left_tensor = tables[0].root.e_ij
             else:
                 left_tensor = self._model.bos_vec
             if len(right) > 0:
-                right_tensor = tables[1].root.vec
+                right_tensor = tables[1].root.e_ij
             else:
                 right_tensor = self._model.eos_vec
             middle = self._model.infer(left_tensor.unsqueeze(0), right_tensor.unsqueeze(0))
@@ -185,9 +180,9 @@ class ChartModelPredictor:
 
 
 class TrainedXLNet:
-    def __init__(self, config_path, tokenizer_path, model_path, device):
+    def __init__(self, config_path, vocab_dir, model_path, device):
         config = AutoConfig.from_pretrained(config_path)
-        self._tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
+        self._tokenizer = BertTokenizer.from_pretrained(vocab_dir)
         self._model = XLNetLMHeadModel(config)
         state_dict = torch.load(model_path, map_location=lambda storage, loc: storage)
         self._model.load_state_dict(state_dict)
@@ -269,9 +264,9 @@ class TrainedXLNet:
 
 
 class TrainedBert:
-    def __init__(self, config_path, tokenizer_path, model_path, device):
+    def __init__(self, config_path, vocab_dir, model_path, device):
         config = AutoConfig.from_pretrained(config_path)
-        self._tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
+        self._tokenizer = BertTokenizer.from_pretrained(vocab_dir)
         self._model = AutoModelWithLMHead.from_pretrained(model_path, config=config)
         self._model.to(device)
         self._device = device
@@ -331,22 +326,22 @@ if __name__ == '__main__':
     cmd.add_argument('--model_id', type=str, default='')
     cmd.add_argument('--config_path', required=True, type=str)
     cmd.add_argument('--model_path', required=True, type=str)
-    cmd.add_argument('--vocab_path', required=True, type=str)
+    cmd.add_argument('--vocab_dir', required=True, type=str)
     cmd.add_argument('--dataset', default='test', type=str)
-    cmd.add_argument('--window_size', default=4, type=int)
     cmd.add_argument('--corpus_path', required=True, type=str)
+    cmd.add_argument('--max_batch_len', default=512, type=int)
     options = cmd.parse_args()
 
     config_path = options.config_path
-    vocab_path = options.vocab_path
+    vocab_dir = options.vocab_dir
     model_path = options.model_path
     if options.model_name == 'R2D2':
-        predictor = BatchR2D2Predictor(config_path, vocab_path, model_path,
-                                        device, options.window_size, max_batch_len=128)
+        predictor = BatchR2D2Predictor(config_path, vocab_dir, model_path,
+                                        device, max_batch_len=128)
     elif options.model_name == 'BERT':
-        predictor = TrainedBert(config_path, vocab_path, model_path, device)
+        predictor = TrainedBert(config_path, vocab_dir, model_path, device)
     elif options.model_name == 'XLNET':
-        predictor = TrainedXLNet(config_path, vocab_path, model_path, device)
+        predictor = TrainedXLNet(config_path, vocab_dir, model_path, device)
 
     sentences = []
     with codecs.open(options.corpus_path, mode='r', encoding='utf-8') as f_in:
@@ -354,5 +349,5 @@ if __name__ == '__main__':
             if len(_line.strip()) > 0:
                 sentences.append(_line.strip())
     evaluator = BiLanguageModelEval(predictor, predictor._tokenizer, device)
-    output_path = f'lm_result/{options.model_name}{options.model_id}_{options.dataset}.txt'
+    output_path = f'./{options.model_name}{options.model_id}_{options.dataset}.txt'
     evaluator.eval(sentences, output_path)

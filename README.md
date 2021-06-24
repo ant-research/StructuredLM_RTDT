@@ -13,9 +13,10 @@ For training from scratch in a single machine with multiple GPUs, please follow 
 ```bash
 CORPUS_PATH=
 OUTPUT_PATH=
+NODE_NUM=
 
 python -m torch.distributed.launch \
-    --nproc_per_node=$1 R2D2_trainer.py --batch_size 16 \
+    --nproc_per_node $NODE_NUM R2D2_trainer.py --batch_size 16 \
     --min_len 2 \
     --max_batch_len 512 \
     --max_line -1 \
@@ -34,7 +35,7 @@ python -m torch.distributed.launch \
 CORPUS_PATH=
 OUTPUT_PATH=
 
-python -m trainer.R2D2_trainer \
+python trainer.R2D2_trainer \
     --batch_size 16 \
     --min_len 2 \
     --max_batch_len 512 \
@@ -47,17 +48,39 @@ python -m trainer.R2D2_trainer \
     --input_type txt
 ```
 
-## Inference
-
-```bash
-
-```
 
 ## Evaluation
 
+Evaluating the bidirectional language model task.
+```bash
+CORPUS_PATH=path to training corpus
+VOCAB_DIR=directory of vocab.txt
+MODEL_PATH=path to model.bin
+CONFIG_PATH=path to config.json
+
+python lm_eval_buckets.py \
+    --model_name R2D2 \
+    --dataset test \
+    --config_path CONFIG_PATH \
+    --model_path MODEL_PATH \
+    --vocab_dir VOCAB_DIR \
+    --corpus_path CORPUS_PATH
+```
+
+For evaluating F1 score on constituency trees, please refer to https://github.com/harvardnlp/compound-pcfg/blob/master/compare_trees.py
+
+Evaluating compatibility with dependency trees:
+Download WSJ dataset and convert to dependency trees by Stanford CoreNLP(https://stanfordnlp.github.io/CoreNLP/).
+As WSJ is not a free dataset, it's not included in our project. Please refer to the files in data/predict_trees for detail format of tree induced.
+
 ```bash
 
+python eval_tree.py \
+    --pred_tree_path path_to_tree_induced \
+    --ground_truth_path path_to_dependency_trees
+    --vocab_dir VOCAB_DIR
 ```
+
 ## Contact 
 
 aaron.hx@alibaba-inc.com and haitao.mi@alibaba-inc.com
