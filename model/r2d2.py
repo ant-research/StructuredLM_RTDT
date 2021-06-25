@@ -130,19 +130,16 @@ class R2D2(R2D2Base):
         :return: loss for Bi-LM and encoded chart tables.
         '''
         seq_lens = torch.sum(attention_mask, dim=1)  # (batch_size, 1)
-        max_len = max(seq_lens)
         batch_size = input_ids.shape[0]
         if atom_spans is None:
             atom_spans = [AtomicSpans([]) for _ in range(batch_size)]
         input_embedding = self.embedding(input_ids)  # (batch_size, seq_len, dim)
-        input_embedding_chunked = input_embedding.transpose(0, 1).chunk(max_len, dim=0)  # (seq_len, batch_size, dim)
         chart_tables = []
-        input_list = [v.squeeze(0) for v in input_embedding_chunked]  # List([batch_size, dim]
         for batch_i in range(batch_size):
             nodes = []
             for col in range(seq_lens[batch_i]):
                 node = ChartNode(0, col)
-                node.e_ij = input_list[col][batch_i]
+                node.e_ij = input_embedding[batch_i][col]
                 node._log_p_sum = torch.zeros([1, ]).to(self.device)
                 nodes.append(node)
             chart_tables.append(ChartTable(nodes))
