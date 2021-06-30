@@ -337,7 +337,7 @@ if __name__ == '__main__':
     model_path = options.model_path
     if options.model_name == 'R2D2':
         predictor = BatchR2D2Predictor(config_path, vocab_dir, model_path,
-                                        device, max_batch_len=128)
+                                        device, max_batch_len=options.max_batch_len)
     elif options.model_name == 'BERT':
         predictor = TrainedBert(config_path, vocab_dir, model_path, device)
     elif options.model_name == 'XLNET':
