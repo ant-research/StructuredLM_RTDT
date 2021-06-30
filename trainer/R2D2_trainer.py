@@ -93,8 +93,8 @@ class DifferentiableTreeTrainer(object):
                             self.logger.info(f'tree: {tables[0].get_token_tree(tokens)}')
                             self.logger.info(f'merge log: {tables[0].get_merge_log(tokens)}')
                             self.logger.info(f'progress:{step}/{total_step} loss: {loss.item()}')
-                if step % save_step == 0 and step > 0 and self.is_master:
-                    torch.save(self.model.state_dict(), os.path.join(output_dir, f'model{epoch}.bin'))
+            if self.is_master:
+                torch.save(self.model.state_dict(), os.path.join(output_dir, f'model{epoch}.bin'))
         if self.is_master:
             torch.save(self.model.state_dict(), os.path.join(output_dir, f'model.bin'))
 
