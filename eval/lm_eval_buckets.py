@@ -68,11 +68,11 @@ class BatchR2D2Predictor:
         self._model.to(device)
         self._device = device
         self._model.eval()
-        self._max_batch_size = max_batch_len
+        self._max_batch_len = max_batch_len
         self._tokenizer = AutoTokenizer.from_pretrained(vocab_dir, config=config, use_fast=True)
 
     def __call__(self, ids, bucket_size, get_bucket_id):
-        batch_size = max(1, self._max_batch_size // len(ids))
+        batch_size = max(1, self._max_batch_len // len(ids))
         mask_groups = []
         current_mask_group = []
         for mask_pos in range(len(ids)):
