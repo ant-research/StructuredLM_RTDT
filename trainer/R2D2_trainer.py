@@ -117,7 +117,7 @@ if __name__ == '__main__':
     cmd.add_argument('--local_rank', default=-1, type=int, help='multi gpu training')
     cmd.add_argument('--epochs', default=10, type=int, help='training epochs')
     cmd.add_argument('--model_path', type=str, required=False, default=None)
-    cmd.add_argument('--warm_up', type=float, default=0.1)
+    cmd.add_argument('--warm_up', type=float, default=0.01)
     cmd.add_argument('--tree_lstm', default=False, action='store_true')
     cmd.add_argument('--do_statistic', default=False, action='store_true')
     cmd.add_argument('--log_step', default=100, type=int)
