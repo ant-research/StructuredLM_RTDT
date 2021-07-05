@@ -24,10 +24,10 @@ python -m torch.distributed.launch \
     --corpus_path $CORPUS_PATH \
     --vocab_path data/en_bert/bert-base-uncased-vocab.txt \
     --config_path data/en_bert/config.json \
-    --epoch 10 \
+    --epoch 60 \
     --output_dir $OUTPUT_PATH \
     --window_size 4 \
-    --input_type ids
+    --input_type txt
 ```
 
 ### Single-GPU
