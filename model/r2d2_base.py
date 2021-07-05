@@ -51,3 +51,4 @@ class R2D2Base(nn.Module):
             new_k = k.replace('module.', '')
             transfered_state_dict[new_k] = v
         self.load_state_dict(transfered_state_dict)
+        self._tie_weights()
