@@ -82,6 +82,11 @@ python eval_tree.py \
     --vocab_dir VOCAB_DIR
 ```
 
+## On-going work
+
+1. Re-implement whole model to increase GPU utility ratio.
+2. Pre-train on large corpus
+
 ## Contact 
 
 aaron.hx@alibaba-inc.com and haitao.mi@alibaba-inc.com
