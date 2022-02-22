@@ -1,7 +1,9 @@
-# R2D2 
+# R2D2/Fast-R2D2
 
 This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://arxiv.org/abs/2107.00967)".
 The current repo is refactored from the original version used in the paper. If meet any issue, please feel free to feedback.
+
+Our new work Fast-R2D2 will be released soon~ 
 
 ## Data
 
