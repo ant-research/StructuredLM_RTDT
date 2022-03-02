@@ -124,7 +124,7 @@ if __name__ == '__main__':
     cmd.add_argument('--corpus_path', type=str, required=True)
     cmd.add_argument('--vocab_dir', type=str)
     cmd.add_argument('--output_path', type=str, required=True)
-    cmd.add_argument('--keep_span', type=bool, default=False)
+    cmd.add_argument('--keep_span', default=False, action='store_true')
     cmd.add_argument('--task_type', choices=['split', 'tokenizing', 'sampling'], default='split')
     args = cmd.parse_args(sys.argv[1:])
 

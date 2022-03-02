@@ -37,7 +37,7 @@ OUTPUT_PATH=
 python -m utils.data_processor --corpus_path CORPUS_PATH --output_path OUTPUT_PATH --task_type split
 ```
 
-Convert raw text to ids
+Convert raw text to ids without span
 ```bash
 CORPUS_PATH=path to your corpus
 OUTPUT_PATH=path to processed corpus
@@ -48,8 +48,19 @@ python -m utils.data_processor --corpus_path $CORPUS_PATH --output_path $OUTPUT_
     --vocab_dir $VOCAB_DIR --config_path $CONFIG_PATH
 ```
 
+Convert raw text to ids with span
+```bash
+CORPUS_PATH=path to your corpus
+OUTPUT_PATH=path to processed corpus
+CONFIG_PATH=
+VOCAB_DIR=
+
+python -m utils.data_processor --corpus_path $CORPUS_PATH --output_path $OUTPUT_PATH --task_type tokenizing \
+    --vocab_dir $VOCAB_DIR --config_path $CONFIG_PATH --keep_span
+```
+
 ## Train
-Pretrain with span constraints
+Pretrain. Whether including span constrains depends on whether convert to ids with span.
 ```bash
 VOCAB_DIR=data/en_config
 CONFIG_PATH=data/en_config/fast_r2d2.json
