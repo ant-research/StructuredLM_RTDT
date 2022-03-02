@@ -1,11 +1,13 @@
 # R2D2/Fast-R2D2
 
-This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://arxiv.org/abs/2107.00967)" and "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)".
+This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://arxiv.org/abs/2107.00967)" 
+
+and "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)".
 
 
 ## Requires
-gcc >= 5.0
-pytorch == 1.9.0+cu111
+gcc >= 5.0,
+pytorch == 1.9.0+cu111,
 cuda == 11.1
 
 For other versions of pytorch, please make sure the corresponding version of CUDA has been installed.
@@ -22,6 +24,7 @@ python -m unittest unittests/cuda_unittest.py
 
 ## Dataset
 WikiText103: https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
+
 GLUE: https://gluebenchmark.com/tasks
 
 ## Dataset preprocess
