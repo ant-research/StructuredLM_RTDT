@@ -1,11 +1,13 @@
 # coding=utf-8
 # Copyright (c) 2021 Ant Group
+# Author: Xiang Hu
 
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
 from copy import deepcopy
 
+from .r2d2_common import ROLE_LEFT, ROLE_RIGHT
 
 ACTIVATION_POOL = ['relu', 'gelu']
 
@@ -25,17 +27,13 @@ class TreeEncoderLayer(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.linear2 = nn.Linear(dim_feedforward, d_model)
 
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
+        self.norm1 = nn.InstanceNorm1d(d_model)
+        self.norm2 = nn.InstanceNorm1d(d_model)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
         self.position_embedding = nn.Embedding(max_role_count, d_model)
 
         self.activation = _get_activation_fn(activation)
-
-    @property
-    def device(self):
-        return next(self.parameters()).device
 
     def forward(self, src, src_mask=None, pos_ids=None):
         """
@@ -45,17 +43,6 @@ class TreeEncoderLayer(nn.Module):
         :param pos_ids:
         :return:
         """
-        if src_mask is None:
-            task_count = src.shape[0] - 2
-            pos_ids = torch.tensor([0] * task_count + [1, 2], dtype=torch.long).to(self.device)
-            src_mask = [[float('-inf') for _ in range(task_count + 2)] for _ in range(task_count + 2)]
-            for pos_i in range(task_count + 2):
-                if pos_i < task_count:
-                    src_mask[pos_i][pos_i] = 0
-                src_mask[pos_i][-1] = 0
-                src_mask[pos_i][-2] = 0
-
-            src_mask = torch.tensor(src_mask).to(self.device)
         if len(pos_ids.shape) == 1:
             sz = src.shape[1]  # sz: batch_size
             pos_ids = pos_ids.unsqueeze(1).expand(-1, sz)  # (3, batch_size)
@@ -79,6 +66,15 @@ class BinaryEncoder(nn.Module):
                                  dropout=config.attention_probs_dropout_prob,
                                  activation='gelu')
         self.layers = nn.ModuleList([layer] + [deepcopy(layer) for _ in range(config.encoder_num_hidden_layers - 1)])
+        self._device = None
+        self._mask_cache = []
+        self._pos_ids_cache = []
+    
+    @property
+    def device(self):
+        if self._device is None:
+            self._device = next(self.parameters()).device
+        return self._device
 
     def forward(self, src, src_mask=None, pos_ids=None):
         """
@@ -88,8 +84,31 @@ class BinaryEncoder(nn.Module):
         :return:
         """
         output = src
+        task_count = src.shape[1] - 2
+        if pos_ids is None:
+            while task_count >= len(self._pos_ids_cache):
+                self._pos_ids_cache.append(None)
+            if self._pos_ids_cache[task_count] is None:
+                pos_ids = torch.tensor([0] * task_count + [ROLE_LEFT, ROLE_RIGHT], dtype=torch.long,
+                                       device=self.device)
+                self._pos_ids_cache[task_count] = pos_ids
+            pos_ids = self._pos_ids_cache[task_count]
+        if src_mask is None:
+            while task_count >= len(self._mask_cache):
+                self._mask_cache.append(None)
+            if self._mask_cache[task_count] is None:
+                src_mask = [[float('-inf') for _ in range(task_count + 2)] for _ in range(task_count + 2)]
+                for pos_i in range(task_count + 2):
+                    if pos_i < task_count:
+                        src_mask[pos_i][pos_i] = 0
+                    src_mask[pos_i][-1] = 0
+                    src_mask[pos_i][-2] = 0
+                src_mask = torch.tensor(src_mask, dtype=torch.float, device=self.device)
+                self._mask_cache[task_count] = src_mask
+            src_mask = self._mask_cache[task_count]
 
+        output = src.permute(1, 0, 2)
         for mod in self.layers:
             output = mod(output, src_mask, pos_ids)
 
-        return output
+        return output.permute(1, 0, 2)

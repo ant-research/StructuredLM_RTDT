@@ -2,7 +2,7 @@
 # Copyright (c) 2021 Ant Group
 
 from data_structure.syntax_tree import BinaryNode
-from eval.eval_tools import get_sentence_from_words, _align_spans
+from utils.misc import get_sentence_from_words, _align_spans
 from eval.tree_wrapper import TreeDecoderWrapper
 import codecs
 from data_structure.const_tree import ConstTree, Lexicon

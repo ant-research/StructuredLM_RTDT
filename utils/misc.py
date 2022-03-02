@@ -1,27 +1,5 @@
-# coding=utf-8
-# Copyright (c) 2021 Ant Group
-
 import unicodedata
 import numpy as np
-from data_structure.syntax_tree import BinaryNode
-
-
-def to_binary_root(tokens, token_tree, start=0):
-    if isinstance(token_tree, str):
-        assert token_tree == tokens[start]
-        return BinaryNode(None, None, start, token_tree), 1
-    else:
-        assert len(token_tree) == 2  # left and right
-        left, len1 = to_binary_root(tokens, token_tree[0], start=start)
-        right, len2 = to_binary_root(tokens, token_tree[1], start=start + len1)
-        node = BinaryNode(left, right, None, None)
-        return node, len1 + len2
-
-
-def softmax(x):
-    """Compute softmax values for each sets of scores in x."""
-    e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum(axis=0)
 
 
 def get_all_subword_id(mapping, idx):

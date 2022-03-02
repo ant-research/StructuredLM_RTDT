@@ -1,5 +1,6 @@
 # coding=utf-8
 # Copyright (c) 2021 Ant Group
+# Author: Xiang Hu
 
 from torch import nn
 import torch
@@ -15,6 +16,7 @@ class R2D2Base(nn.Module):
         self.embedding = nn.Embedding(self.vocab_size, self.input_dim)
         self.classifier = nn.Linear(self.hidden_dim, config.vocab_size)
 
+        self.tie_decoder = getattr(config, 'tie_decoder', True)
         self.cls_token_id = config.cls_token_id
         self.mask_token_id = config.mask_token_id
         self.pad_token_id = config.pad_token_id

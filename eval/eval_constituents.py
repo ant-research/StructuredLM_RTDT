@@ -1,8 +1,9 @@
 # coding=utf-8
 # Copyright (c) 2021 Ant Group
+# Author: Xiang
 
-from data_structure.basic_structure import DotDict
 from data_structure.const_tree import ConstTree
+from data_structure.basic_structure import DotDict
 import logging
 import codecs
 
