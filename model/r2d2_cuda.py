@@ -64,8 +64,6 @@ class R2D2Cuda(R2D2Base):
             else:
                 self.loss_funcs.append(objectives.cuda_default_lm_loss)
 
-        self.tree_mask_token_id = config.tree_mask_token_id
-
     def create_tensor_cache(self, seq_lens):
         # e_ij, log_p_ij, log_p_sum_ij
         tensor_cache = TensorCache(
