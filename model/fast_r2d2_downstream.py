@@ -130,7 +130,7 @@ class FastR2D2CrossSentence(nn.Module):
             s_indices = self.parser(input_ids, attention_mask, atom_spans=atom_spans)
             results = self.r2d2(input_ids, attention_mask, merge_trajectories=s_indices,
                                 sample_trees=num_samples, recover_tree=True, keep_tensor_cache=True,
-                                bilm_loss=True)
+                                lm_loss=True)
             tables = results['tables']
             tensor_cache = results['tensor_cache']
             sampled_trees = results['sampled_trees']
