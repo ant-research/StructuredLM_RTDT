@@ -66,7 +66,7 @@ def convert_txt_to_ids_spans(path, tokenizer, seperator, output_path, max_len=32
                     total_sentences += 1
                 else:
                     discard_sentences += 1
-            if total_sentences % 100 == 0:
+            if total_sentences % 100 == 0 and total_sentences > 0:
                 print(f'all sentence: {total_sentences}, discard rate: {discard_sentences / total_sentences}')
 
 
@@ -141,6 +141,6 @@ if __name__ == '__main__':
         if not args.keep_span:
             convert_txt_to_ids(args.corpus_path, tokenizer, args.output_path, max_len=200)
         else:
-            convert_txt_to_ids_spans(args.corpus_path, tokenizer, )
+            convert_txt_to_ids_spans(args.corpus_path, tokenizer, ' ', args.output_path, max_len = 200)
     elif args.task_type == 'sampling':
         random_select_sentences(args.corpus_path, args.output_path, [50, 100, 200, 500], 1000)

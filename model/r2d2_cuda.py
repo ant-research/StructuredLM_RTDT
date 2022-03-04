@@ -61,8 +61,8 @@ class R2D2Cuda(R2D2Base):
                     self.loss_funcs.append(
                         partial(getattr(objectives, f'cuda_{loss_name}'),
                                 **loss_params))
-            else:
-                self.loss_funcs.append(objectives.cuda_default_lm_loss)
+        if len(self.loss_funcs) == 0:
+            self.loss_funcs.append(objectives.cuda_default_lm_loss)
 
     def create_tensor_cache(self, seq_lens):
         # e_ij, log_p_ij, log_p_sum_ij
