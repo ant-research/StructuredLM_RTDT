@@ -69,7 +69,7 @@ OUTPUT_DIR=output model dir
 
 cd trainer
 
-python -m torch.distributed.launch --nproc_per_node 8 fast_r2d2_trainer.py \
+python -m torch.distributed.launch --nproc_per_node 8 fast_r2d2_pretrain.py \
     --batch_size 96 --max_batch_len 1536 \
     --lr 5e-5 --parser_lr 1e-2 \
     --vocab_dir $VOCAB_DIR \
