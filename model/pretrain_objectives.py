@@ -21,14 +21,13 @@ def cuda_default_lm_loss(loss_param: LMLossParam):
     tables = loss_param.chart_tables
     tensor_cache = loss_param.tensor_cache
     flatten_input_ids = loss_param.flatten_input_ids
-    window_size = model.window_size
-    cache_ids = torch.full([flatten_input_ids.shape[0] * window_size * 2],
+    cache_ids = torch.full([flatten_input_ids.shape[0] * 2],
                            0,
                            requires_grad=False,
                            dtype=torch.int,
                            device=model.device)
     tables.prepare_bilm(cache_ids, BOS_CACHE_ID, EOS_CACHE_ID)
-    context_cache_ids = cache_ids.view(-1, window_size,
+    context_cache_ids = cache_ids.view(-1, 1,
                                        2)[:flatten_input_ids.shape[0], :, :]
 
     e_ij, log_p_ij = tensor_cache.gather(
