@@ -241,7 +241,7 @@ class R2D2Cuda(R2D2Base):
             log_p_ijk_sum = log_p_ijk + log_p_ij_sum  # (batch_size, combination_size)
 
             # assert not torch.any(torch.isinf(log_p_ij_step))
-            a_ij = gumbel_softmax(log_p_ijk_sum)
+            a_ij = gumbel_softmax(log_p_ijk_sum, train=self.training)
             # (batch_size, combination_size)
 
             # apply gumbel softmax
