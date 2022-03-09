@@ -4,6 +4,7 @@ This is the official code for paper titled "[R2D2: Recursive Transformer based o
 
 and "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)".
 
+Models pretrained on the WikiText-103 or larger scale corpus will be released soon.
 
 ## Requires
 gcc >= 5.0,
