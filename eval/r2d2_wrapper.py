@@ -6,7 +6,7 @@ import torch
 import os
 from transformers import AutoTokenizer, AutoConfig
 from data_structure.syntax_tree import BinaryNode
-from utils.misc import get_sentence_from_words, _align_spans
+from utils.misc import get_sentence_from_words, _align_spans, load_vocab
 from utils.model_loader import load_model
 from model.topdown_parser import TopdownParser
 from eval.tree_wrapper import TreeDecoderWrapper
@@ -97,7 +97,7 @@ class ChartModelWrapper(TreeDecoderWrapper):
 
 
 class R2D2ParserWrapper(TreeDecoderWrapper):
-    def __init__(self, config_path, model_cls, model_path, parser_path, parser_only, sep_word, device, in_word=False):
+    def __init__(self, config_path, model_cls, model_path, parser_path, parser_only, sep_word, device, in_word=False, kv_dict=False):
         config_dir = os.path.dirname(config_path)
         config = AutoConfig.from_pretrained(config_path)
         self._model = model_cls(config)
@@ -113,7 +113,12 @@ class R2D2ParserWrapper(TreeDecoderWrapper):
         self._device = device
         self._model.eval()
         self._parser.eval()
-        self._tokenizer = AutoTokenizer.from_pretrained(config_dir, config=config, use_fast=True)
+        self._kv_dict = kv_dict
+        if not self._kv_dict:
+            self._tokenizer = AutoTokenizer.from_pretrained(config_dir, config=config, use_fast=True)
+        else:
+            self._word2idx, self._idx2word = load_vocab(os.path.join(config_dir, 'vocab.txt'))
+
 
     def _transfer_to_binary_node(self, node, tokens):
         if node.is_leaf:
@@ -124,20 +129,32 @@ class R2D2ParserWrapper(TreeDecoderWrapper):
                               None, None)
 
     def __call__(self, tokens):
-        sentence, spans = get_sentence_from_words(tokens, self._sep_word)
-        outputs = self._tokenizer.encode_plus(sentence,
-                                              add_special_tokens=False,
-                                              return_offsets_mapping=True)
-        new_spans = outputs['offset_mapping']
-        word_starts, word_ends = _align_spans(spans, new_spans)
-        atom_spans = []
-        indices_mapping = [0] * len(outputs['input_ids'])
-        for pos, (st, ed) in enumerate(zip(word_starts, word_ends)):
-            if ed > st:
-                atom_spans.append([st, ed])
-            for idx in range(st, ed + 1):
-                indices_mapping[idx] = pos
-
+        if not self._kv_dict:
+            sentence, spans = get_sentence_from_words(tokens, self._sep_word)
+            outputs = self._tokenizer.encode_plus(sentence,
+                                                add_special_tokens=False,
+                                                return_offsets_mapping=True)
+            new_spans = outputs['offset_mapping']
+            word_starts, word_ends = _align_spans(spans, new_spans)
+            atom_spans = []
+            indices_mapping = [0] * len(outputs['input_ids'])
+            for pos, (st, ed) in enumerate(zip(word_starts, word_ends)):
+                if ed > st:
+                    atom_spans.append([st, ed])
+                for idx in range(st, ed + 1):
+                    indices_mapping[idx] = pos
+            id_to_tokens = self._tokenizer.convert_ids_to_tokens
+        else:
+            token_indices = []
+            for t in tokens:
+                if t.lower() in self._word2idx:
+                    token_indices.append(self._word2idx[t.lower()])
+                else:
+                    token_indices.append(self._word2idx['<unk>'])
+            outputs = {'input_ids': token_indices, 'attention_mask': [1] * len(token_indices)}
+            def _id_to_token(ids):
+                return tokens
+            id_to_tokens = _id_to_token
         if not self._in_word:
             inputs = {"input_ids": torch.tensor([outputs['input_ids']]).to(self._device),
                     "attention_mask": torch.tensor([outputs['attention_mask']]).to(self._device)}
@@ -149,15 +166,14 @@ class R2D2ParserWrapper(TreeDecoderWrapper):
             if not self._in_word:
                 merge_trajectories = self._parser(**inputs)
                 if self._parser_only:
-                    root, tree_expr = get_tree_from_merge_trajectory(merge_trajectories[0], len(outputs['input_ids']),
-                                                self._tokenizer.convert_ids_to_tokens(outputs['input_ids']))
+                    root, tree_expr = get_tree_from_merge_trajectory(merge_trajectories[0], len(outputs['input_ids']), 
+                                                                     id_to_tokens(outputs['input_ids']))
                 else:
                     results = self._model(**inputs, merge_trajectories=merge_trajectories.clone(), recover_tree=True)
             
                     root = results['tables'][0].root.best_node
 
-                binary_root = self._transfer_to_binary_node(root,
-                                                            self._tokenizer.convert_ids_to_tokens(outputs['input_ids']))
+                binary_root = self._transfer_to_binary_node(root, id_to_tokens(outputs['input_ids']))
             else:
                 merge_trajectories = self._parser(**inputs)
                 if self._parser_only:

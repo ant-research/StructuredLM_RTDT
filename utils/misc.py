@@ -103,3 +103,13 @@ def get_sentence_from_words(words, word_sep):
     sentence = word_sep.join(sentence)
 
     return sentence, word_char_spans
+
+def load_vocab(vocab_file):
+    word2idx = {}
+    idx2word = {}
+    for line in open(vocab_file, 'r', encoding='utf-8'):
+        v, k = line.strip().split()
+        word2idx[v] = int(k)
+    for word, idx in word2idx.items():
+        idx2word[idx] = word
+    return word2idx, idx2word

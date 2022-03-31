@@ -1,6 +1,7 @@
 # coding=utf-8
 # Copyright (c) 2021 Ant Group
 
+from lib2to3.pgen2 import token
 import random
 import torch
 from transformers import AutoConfig, AutoTokenizer, AdamW, get_linear_schedule_with_warmup
@@ -14,7 +15,7 @@ import os
 import logging
 from model.topdown_parser import TopdownParser
 from model.r2d2_cuda import R2D2Cuda
-from reader.memory_line_reader import BatchSelfRegressionLineDataset
+from reader.memory_line_reader import BatchSelfRegressionLineDataset, TreeBankDataset
 import time
 from utils.model_loader import get_max_epoch, load_checkpoint, load_model
 from utils.tree_utils import get_token_tree, get_tree_from_merge_trajectory
@@ -33,16 +34,16 @@ class Trainer(object):
                  model,
                  parser,
                  is_master,
-                 tokenizer,
+                 convert_ids_to_tokens,
                  device,
                  logger,
                  apex_enable=False,
                  n_gpu=1):
         self.model = model
         self.parser = parser
-        self.tokenizer = tokenizer
         self.is_master = is_master
         self.logger = logger
+        self.convert_ids_to_tokens = convert_ids_to_tokens
 
         self.device = device
         self.n_gpu = n_gpu
@@ -141,7 +142,7 @@ class Trainer(object):
                         sampled_trees = results['sampled_trees']
                         self.model.train()
                         self.parser.train()
-                        tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+                        tokens = self.convert_ids_to_tokens(inputs["input_ids"][0])
                         if self.is_master:
                             # sampled_splits = sampled_trees['split_points'].to('cpu').data.numpy()  # (B, K, L - 1)
                             seq_len = inputs["attention_mask"][0].sum()
@@ -217,7 +218,7 @@ if __name__ == "__main__":
     cmd.add_argument("--input_type",
                      default="txt",
                      type=str,
-                     choices=["txt", "ids"])
+                     choices=["txt", "ids", "treebank"])
     cmd.add_argument("--corpus_path",
                      required=True,
                      type=str,
@@ -287,21 +288,26 @@ if __name__ == "__main__":
     model.to(device)
     parser.to(device)
 
-    print(f"start loading dataset on {global_rank}")
-    tokenizer = AutoTokenizer.from_pretrained(args.vocab_dir)
-    data_batch_size = 1
-
-    dataset = BatchSelfRegressionLineDataset(
-        args.corpus_path,
-        tokenizer,
-        batch_max_len=args.max_batch_len,
-        min_len=args.min_len,
-        batch_size=args.batch_size,
-        max_line=args.max_line,
-        input_type=args.input_type,
-        random=args.random_sample,
-        seperator=args.seperator
-    )
+    if args.input_type != "treebank":
+        tokenizer = AutoTokenizer.from_pretrained(args.vocab_dir)
+        dataset = BatchSelfRegressionLineDataset(
+            args.corpus_path,
+            tokenizer,
+            batch_max_len=args.max_batch_len,
+            min_len=args.min_len,
+            batch_size=args.batch_size,
+            max_line=args.max_line,
+            input_type=args.input_type,
+            random=args.random_sample,
+            seperator=args.seperator
+        )
+    else:
+        dataset = TreeBankDataset(
+            args.corpus_path, 
+            os.path.join(args.vocab_dir, 'vocab.txt'),
+            batch_max_len=args.max_batch_len,
+            batch_size=args.batch_size,
+            random=args.random_sample)
 
     data_batch_size = 1  # dynamic batch_size
 
@@ -404,7 +410,7 @@ if __name__ == "__main__":
         model,
         parser,
         device=device,
-        tokenizer=tokenizer,
+        convert_ids_to_tokens=dataset.convert_ids_to_tokens,
         logger=logger,
         is_master=is_master,
         n_gpu=n_gpu,

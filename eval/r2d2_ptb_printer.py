@@ -20,6 +20,7 @@ if __name__ == '__main__':
     cmd.add_argument('--config_path', required=True, type=str)
     cmd.add_argument('--corpus_path', required=True, type=str)
     cmd.add_argument('--in_word', action='store_true', default=False)
+    cmd.add_argument('--kv_dict', action='store_true', default=False)
     cmd.add_argument('--output_path', default='./pred_trees.txt', type=str)
     options = cmd.parse_args()
     model_cls = R2D2Cuda
@@ -28,7 +29,8 @@ if __name__ == '__main__':
                                   parser_only=options.parser_only,
                                   model_path=options.model_path, 
                                   parser_path=options.parser_path,
-                                  sep_word=' ', in_word=options.in_word, device=device)
+                                  sep_word=' ', in_word=options.in_word, device=device,
+                                  kv_dict=options.kv_dict)
 
     with codecs.open(options.corpus_path, mode='r', encoding='utf-8') as f, \
             codecs.open(os.path.join(options.output_path), mode='w', encoding='utf-8') as out:

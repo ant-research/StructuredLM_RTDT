@@ -30,13 +30,10 @@ def cuda_default_lm_loss(loss_param: LMLossParam):
     context_cache_ids = cache_ids.view(-1, 1,
                                        2)[:flatten_input_ids.shape[0], :, :]
 
-    e_ij, log_p_ij = tensor_cache.gather(
+    e_ij = tensor_cache.gather(
         context_cache_ids.flatten(),
-        [CacheSlots.E_IJ, CacheSlots.LOG_P_IJ_SUM])
+        [CacheSlots.E_IJ])[0]
 
     e_ij = e_ij.view(*context_cache_ids.shape, model.input_dim)
-    log_p_ij = log_p_ij.view(*context_cache_ids.shape)  # (total_len, comb_size, 2)
-    weights = F.softmax(log_p_ij, dim=1)
-    context_vec = torch.einsum("ijk,ijk...->ik...", weights, e_ij)  # (total_len, 2, dim)
-    logits = model.infer(context_vec)
+    logits = model.infer(e_ij)
     return F.cross_entropy(logits, flatten_input_ids)

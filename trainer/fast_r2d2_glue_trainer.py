@@ -2,6 +2,7 @@
 # Copyright (c) 2021 Ant Group
 
 import argparse
+from dis import dis
 import logging
 import os
 import time
@@ -151,6 +152,7 @@ if __name__ == "__main__":
     cmd.add_argument("--warm_up", type=float, default=0.01)
     cmd.add_argument("--log_step", default=100, type=int)
     cmd.add_argument("--apex_mode", default="O1", type=str)
+    cmd.add_argument("--disable_parser", default=False, action='store_true')
     cmd.add_argument("--sampler", choices=["random", "sequential"], default="sequential", help="sampling input data")
 
     args = cmd.parse_args(sys.argv[1:])
@@ -193,9 +195,9 @@ if __name__ == "__main__":
     config = AutoConfig.from_pretrained(args.config_path)
 
     if dataset.model_type == 'single':
-        model = FastR2D2Classification(config, len(dataset.labels))
+        model = FastR2D2Classification(config, len(dataset.labels), disable_parser=args.disable_parser)
     elif dataset.model_type == 'pair':
-        model = FastR2D2CrossSentence(config, len(dataset.labels))
+        model = FastR2D2CrossSentence(config, len(dataset.labels), disable_parser=args.disable_parser)
 
     if args.pretrain_dir is not None:
         model_path = os.path.join(args.pretrain_dir, 'model.bin')

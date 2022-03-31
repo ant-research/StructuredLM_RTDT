@@ -8,25 +8,9 @@ import copy
 from typing import List, Dict
 import random
 from utils.misc import _align_spans, get_sentence_from_words
-
-from utils.conll_utils import ConllReader
-from data_structure.const_tree import ConstTree
-
+from utils.treebank_processor import get_tags_tokens_lowercase
+import numpy as np
 import logging
-
-EMPTY_HISTORY = "[EMPTY]"
-AGENT = "[AGENT]"
-USER = "[USER]"
-TOPIC = "[TOPIC]"
-
-
-def generate_square_subsequent_mask(sz):
-    r"""Generate a square mask for the sequence. The masked positions are filled with float('-inf').
-        Unmasked positions are filled with float(0.0).
-    """
-    mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-    mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-    return mask
 
 
 class InputItem:
@@ -35,7 +19,94 @@ class InputItem:
         self.atom_spans = atom_spans
 
 
-class BatchSelfRegressionLineDataset(Dataset):
+class BatchByLengthDataset(Dataset):
+    def __init__(self, max_batch_size, max_batch_len, random) -> None:
+        super().__init__()
+        self._lines = []
+        self._batches = []
+        self._max_batch_size = max_batch_size
+        self._max_batch_len = max_batch_len
+        self._random = random
+
+    def shuffle(self):
+        random.shuffle(self._lines)
+        self._batches = self.batchify()
+
+    def __len__(self):
+        return len(self._batches)
+
+    def __getitem__(self, idx):
+        return self._batches[idx]
+
+    def collate_batch(self, items: List[List[InputItem]]) -> Dict[str, torch.Tensor]:
+        ids_batch = [item.ids for item in items[0]]
+        lens = map(lambda a: len(a), ids_batch)
+        input_max_len = max(1, max(lens))
+
+        input_ids_batch = []
+        mask_batch = []
+
+        for input_ids in ids_batch:
+            masked_input_ids = copy.deepcopy(input_ids)
+            input_ids_batch.append(masked_input_ids + [0] * (input_max_len - len(input_ids)))
+            mask_batch.append([1] * len(input_ids) + [0] * (input_max_len - len(input_ids)))
+
+        return {"input_ids": torch.tensor(input_ids_batch), "attention_mask": torch.tensor(mask_batch),
+                "atom_spans": [item.atom_spans for item in items[0]]}
+
+    def batchify(self):
+        if not self._random:
+            logging.info("batchify")
+            len_dict = {}
+            for input_item in self._lines:
+                arr = len_dict.get(len(input_item.ids), [])
+                arr.append(input_item)
+                len_dict[len(input_item.ids)] = arr
+            len_keys = list(len_dict.keys())
+            len_keys.sort(key=lambda x: x, reverse=True)
+            rest_lines = len(self._lines)
+            batches = []
+            while rest_lines > 0:
+                rest_len = self._max_batch_len
+                current_batch = []
+                while rest_len > 0 and len(current_batch) < self._max_batch_size:
+                    next_len = -1
+                    for key_len in len_keys:
+                        if 0 < key_len <= rest_len and len(len_dict[key_len]) > 0:
+                            next_len = key_len
+                            break
+                    if next_len != -1:
+                        assert len(len_dict) > 0
+                        item = len_dict[next_len].pop()
+                        current_batch.append(item)
+                        rest_len -= next_len
+                        rest_lines -= 1
+                    else:
+                        break
+                if len(current_batch) == 0:
+                    # no sentence to add
+                    break
+                batches.append(current_batch)
+            return batches  # [_ for _ in reversed(batches)]
+        else:
+            logging.info("batchify")
+            batches = []
+            current_batch = []
+            current_len_sum = 0
+            for item in self._lines:
+                if (current_len_sum + len(item.ids)) >= self._max_batch_len or \
+                    len(current_batch) >= self._max_batch_size:
+                    batches.append(current_batch)
+                    current_batch = []
+                    current_len_sum = 0
+                current_batch.append(item)
+                current_len_sum += len(item.ids)
+            if len(current_batch) > 0:
+                batches.append(current_batch)
+            return batches
+
+
+class BatchSelfRegressionLineDataset(BatchByLengthDataset):
     def __init__(self, path, tokenizer, batch_max_len, batch_size,
                  min_len=2, max_line=1000, input_type="txt", random=False,
                  seperator=None):
@@ -44,9 +115,8 @@ class BatchSelfRegressionLineDataset(Dataset):
         random: True: for randomly batch sentences
                 False: batch sentences in similar length
         '''
-        super().__init__()
+        super().__init__(max_batch_size=batch_size, max_batch_len=batch_max_len, random=random)
         self._random = random
-        self._lines = []
         self._tokenizer = tokenizer
         self._batch_max_len = batch_max_len
         self._batch_size = batch_size
@@ -93,79 +163,42 @@ class BatchSelfRegressionLineDataset(Dataset):
                 if len(self._lines) > max_line > 0:
                     break
         self.shuffle()
+    
+    def convert_ids_to_tokens(self, ids):
+        return self._tokenizer.convert_ids_to_tokens(ids)
 
-    def batchify(self):
-        if not self._random:
-            logging.info("batchify")
-            len_dict = {}
-            for input_item in self._lines:
-                arr = len_dict.get(len(input_item.ids), [])
-                arr.append(input_item)
-                len_dict[len(input_item.ids)] = arr
-            len_keys = list(len_dict.keys())
-            len_keys.sort(key=lambda x: x, reverse=True)
-            rest_lines = len(self._lines)
-            batches = []
-            while rest_lines > 0:
-                rest_len = self._batch_max_len
-                current_batch = []
-                while rest_len > 0 and len(current_batch) < self._batch_size:
-                    next_len = -1
-                    for key_len in len_keys:
-                        if 0 < key_len <= rest_len and len(len_dict[key_len]) > 0:
-                            next_len = key_len
-                            break
-                    if next_len != -1:
-                        assert len(len_dict) > 0
-                        item = len_dict[next_len].pop()
-                        current_batch.append(item)
-                        rest_len -= next_len
-                        rest_lines -= 1
-                    else:
-                        break
-                if len(current_batch) == 0:
-                    # no sentence to add
-                    break
-                batches.append(current_batch)
-            return batches  # [_ for _ in reversed(batches)]
-        else:
-            logging.info("batchify")
-            batches = []
-            current_batch = []
-            current_len_sum = 0
-            for item in self._lines:
-                if (current_len_sum + len(item.ids)) >= self._batch_max_len:
-                    batches.append(current_batch)
-                    current_batch = []
-                    current_len_sum = 0
-                current_batch.append(item.ids)
-                current_len_sum += len(item.ids)
-            if len(current_batch) > 0:
-                batches.append(current_batch)
-            return batches
 
-    def shuffle(self):
-        random.shuffle(self._lines)
-        self._batches = self.batchify()
+class TreeBankDataset(BatchByLengthDataset):
+    def __init__(self, treebank_path, vocab_path, batch_max_len, batch_size,
+                 random=False,) -> None:
+        super().__init__(max_batch_size=batch_size, max_batch_len=batch_max_len, random=random)
 
-    def __len__(self):
-        return len(self._batches)
+        self.word2idx, self.idx2word = self.load_vocab(vocab_path)
+        self._lines = []
+        with codecs.open(treebank_path, mode='r', encoding='utf-8') as fin:
+            for line in fin:
+                _, _, lower_tokens = get_tags_tokens_lowercase(line)
+                ids = [self.word2idx[t] if t in self.word2idx else self.word2idx['<unk>'] for t in lower_tokens]
+                input_item = InputItem(ids, None)
+                if len(ids) > 2:
+                    self._lines.append(input_item)
+        self.shuffle()
 
-    def __getitem__(self, idx):
-        return self._batches[idx]
+    def load_vocab(self, vocab_file):
+        word2idx = {}
+        idx2word = {}
+        for line in open(vocab_file, 'r', encoding='utf-8'):
+            v, k = line.strip().split()
+            word2idx[v] = int(k)
+        for word, idx in word2idx.items():
+            idx2word[idx] = word
+        return word2idx, idx2word
 
-    def collate_batch(self, items: List[List[InputItem]]) -> Dict[str, torch.Tensor]:
-        ids_batch = [item.ids for item in items[0]]
-        lens = map(lambda a: len(a), ids_batch)
-        input_max_len = max(1, max(lens))
+    def _convert(self, x):
+        return torch.from_numpy(np.asarray(x))
 
-        input_ids_batch = []
-        mask_batch = []
-
-        for input_ids in ids_batch:
-            masked_input_ids = copy.deepcopy(input_ids)
-            input_ids_batch.append(masked_input_ids + [self._tokenizer.pad_token_id] * (input_max_len - len(input_ids)))
-            mask_batch.append([1] * len(input_ids) + [0] * (input_max_len - len(input_ids)))
-
-        return {"input_ids": torch.tensor(input_ids_batch), "attention_mask": torch.tensor(mask_batch),
-                "atom_spans": [item.atom_spans for item in items[0]]}
+    def convert_ids_to_tokens(self, ids):
+        tokens = []
+        for w_id in ids.to('cpu').data.numpy():
+            tokens.append(self.idx2word[w_id])
+        return tokens

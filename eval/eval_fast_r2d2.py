@@ -68,6 +68,7 @@ if __name__ == "__main__":
     cmd.add_argument("--turn", default='', type=str)
     cmd.add_argument("--max_batch_len", default=512, type=int)
     cmd.add_argument("--max_batch_size", default=32, type=int)
+    cmd.add_argument("--disable_parser", default=False, action='store_true')
 
     args = cmd.parse_args(sys.argv[1:])
 
@@ -92,9 +93,9 @@ if __name__ == "__main__":
     metric = load_metric("glue", TASK_MAPPING[args.task_type])
 
     if dataset.model_type == 'single':
-        model = FastR2D2Classification(config, len(dataset.labels))
+        model = FastR2D2Classification(config, len(dataset.labels), disable_parser=args.disable_parser)
     elif dataset.model_type == 'pair':
-        model = FastR2D2CrossSentence(config, len(dataset.labels))
+        model = FastR2D2CrossSentence(config, len(dataset.labels), disable_parser=args.disable_parser)
 
     if args.model_dir is not None:
         model_path = os.path.join(args.model_dir, f'model{args.turn}.bin')
