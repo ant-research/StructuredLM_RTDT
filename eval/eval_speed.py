@@ -11,7 +11,6 @@ from tqdm import tqdm
 import time
 import multiprocessing
 from reader.memory_line_reader import BatchSelfRegressionLineDataset
-import torch.multiprocessing as mp
 
 
 class Processor(multiprocessing.Process):
@@ -104,6 +103,7 @@ if __name__ == "__main__":
         model = R2D2(config)
         model_call_fn = lambda model, inputs, forced: model(**inputs)
 
+    model.eval()
     model.to(device)
 
     dataloader = DataLoader(

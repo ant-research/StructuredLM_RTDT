@@ -106,7 +106,7 @@ class R2D2Cuda(R2D2Base):
                                           device=self.device)
         return self._task_ids
 
-    def encode(self, tensor_batch):
+    def encode(self, tensor_batch, force_encoding=False):
         """
         :param tensor_batch: (?, batch_size, 2, dim)
         :return: representation and log probability for the combinations
@@ -126,25 +126,37 @@ class R2D2Cuda(R2D2Base):
         dim = tensor_batch.shape[-1]
         tensor_batch = tensor_batch.view(row_len * batch_size, 2, dim)
         sz = tensor_batch.shape[0]
+        if not force_encoding:
+            # (?, 1)
+            tasks_embedding = self.embedding(self.task_ids.unsqueeze(0).expand(sz, -1))
+            # (?, 1, dim)
+            input_embedding = torch.cat([tasks_embedding, tensor_batch],
+                                        dim=1)  # (?, 4, dim)
+            outputs = self.tree_encoder(
+                input_embedding)  # (? * batch_size, 4, dim)
 
-        # (?, 1)
-        tasks_embedding = self.embedding(self.task_ids.unsqueeze(0).expand(sz, -1))
-        # (?, 1, dim)
-        input_embedding = torch.cat([tasks_embedding, tensor_batch],
-                                    dim=1)  # (?, 4, dim)
-        outputs = self.tree_encoder(
-            input_embedding)  # (? * batch_size, 4, dim)
+            log_p_ijk = F.logsigmoid(
+                self.score_linear(outputs[:, 0, :]).view(
+                    row_len, batch_size))  # (?, batch_size)
+            logits = outputs[:, 1, :].view(row_len, batch_size, dim)  # (?, batch_size, dim)
+            w_ijk = F.softmax(self.blender(logits), dim=-1)  # (?, batch_size, 2)
+            h_ik_kj = outputs[:, -2:, :].view(row_len, batch_size, 2, dim)
+            c_ijk = torch.einsum("ijk,ijk...->ij...", w_ijk, h_ik_kj)  # (?, batch_size, dim)
 
-        log_p_ijk = F.logsigmoid(
-            self.score_linear(outputs[:, 0, :]).view(
-                row_len, batch_size))  # (?, batch_size)
+            return self.norm(c_ijk), log_p_ijk
+        else:
+            tasks_embedding = self.embedding(self.task_ids[1].unsqueeze(0).expand(sz, -1))
+            # (?, 1, dim)
+            input_embedding = torch.cat([tasks_embedding, tensor_batch],
+                                        dim=1)  # (?, 3, dim)
+            outputs = self.tree_encoder(
+                input_embedding)  # (? * batch_size, 4, dim)
+            logits = outputs[:, 0, :].view(row_len, batch_size, dim)  # (?, batch_size, dim)
+            w_ijk = F.softmax(self.blender(logits), dim=-1)  # (?, batch_size, 2)
+            h_ik_kj = outputs[:, -2:, :].view(row_len, batch_size, 2, dim)
+            c_ijk = torch.einsum("ijk,ijk...->ij...", w_ijk, h_ik_kj)  # (?, batch_size, dim)
 
-        logits = outputs[:, 1, :].view(row_len, batch_size, dim)  # (?, batch_size, dim)
-        w_ijk = F.softmax(self.blender(logits), dim=-1)  # (?, batch_size, 2)
-        h_ik_kj = outputs[:, -2:, :].view(row_len, batch_size, 2, dim)
-        c_ijk = torch.einsum("ijk,ijk...->ij...", w_ijk, h_ik_kj)  # (?, batch_size, dim)
-
-        return self.norm(c_ijk), log_p_ijk
+            return self.norm(c_ijk), None
 
     def initialize_embeddings(self, input_ids, seq_lens, input_embeddings=None,
                                feature_ids_list=None, tensor_cache = None,

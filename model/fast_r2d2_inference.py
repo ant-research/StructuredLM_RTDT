@@ -82,7 +82,7 @@ def force_encode(parser, r2d2, input_ids, attention_mask, atom_spans: List[List[
     for current_batch in encoding_batchs:        
         current_batch = torch.tensor(current_batch, device=r2d2.device)
         e_ikj = e_ij_cache[current_batch]
-        e_ij, _ = r2d2.encode(e_ikj.unsqueeze(1))  # (?, 1, dim)
+        e_ij, _ = r2d2.encode(e_ikj.unsqueeze(1), force_encoding=True)  # (?, 1, dim)
         e_ij = e_ij.squeeze(1)
         e_ij_cache[cache_id_offset: cache_id_offset + e_ij.shape[0]] = e_ij
         cache_id_offset += e_ij.shape[0]
