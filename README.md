@@ -72,7 +72,7 @@ cd trainer
 
 python -m torch.distributed.launch --nproc_per_node 8 fast_r2d2_pretrain.py \
     --batch_size 96 --max_batch_len 1536 \
-    --lr 5e-5 --parser_lr 1e-3 \
+    --lr 5e-5 --parser_lr 1e-2 \
     --vocab_dir $VOCAB_DIR \
     --config_path $CONFIG_PATH \
     --max_grad_norm 1.0 --input_type ids \
@@ -117,7 +117,7 @@ finetune GLUE on 8*A100
 TASK_NAME=SST-2/CoLA/QQP/MNLI
 
 python -m torch.distributed.launch --nproc_per_node 8 trainer/fast_r2d2_glue_trainer.py \
-    --max_grad_norm 1.0 --lr 5e-5 --parser_lr 1e-3 \
+    --max_grad_norm 1.0 --lr 5e-5 --parser_lr 1e-2 \
     --config_path path_to_config \
     --vocab_dir path_to_vocab_dir \
     --task_type sst-2 --glue_dir path_to_glue_dir/$TASK_NAME --max_batch_len 1536 \
