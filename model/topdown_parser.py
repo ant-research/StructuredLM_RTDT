@@ -16,6 +16,7 @@ class TopdownParser(nn.Module):
         self.encoder = nn.LSTM(input_size=self.input_dim, hidden_size=self.hidden_dim,
                                num_layers=config.parser_num_layers, batch_first=True,
                                bidirectional=True, dropout=config.hidden_dropout_prob)
+        self.norm = nn.LayerNorm(self.hidden_dim)
         self.score_mlp = nn.Sequential(nn.Linear(2 * self.hidden_dim, self.hidden_dim),
                                        nn.GELU(),
                                        nn.Dropout(config.hidden_dropout_prob),
@@ -31,6 +32,7 @@ class TopdownParser(nn.Module):
         packed_output, _ = self.encoder(packed_input)
         output, _ = pad_packed_sequence(packed_output, batch_first=True)
         output = output.view(input_ids.shape[0], seq_len_cpu.max(), 2, self.hidden_dim)
+        output = self.norm(output)
         output = torch.cat([output[:, :-1, 0, :], output[:, 1:, 1, :]], dim=2)
         scores = self.score_mlp(output)  # meaningful split points: seq_lens - 1
         return scores.squeeze(-1)
