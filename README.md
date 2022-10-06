@@ -2,7 +2,7 @@
 
 This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (accepted by ACL2021), [R2D2_original_version](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
 
-and "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)".
+and "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (accepted by EMNLP2022)
 
 Models pretrained on the WikiText-103 or larger scale corpus will be released soon.
 
