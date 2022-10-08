@@ -37,7 +37,7 @@ class R2D2(R2D2Base):
         mask_ids = torch.zeros([sz, ], dtype=torch.long).fill_(self.mask_token_id).to(self.device)
         mask_embedding = self.embedding(mask_ids)  # (sz, hidden_dim)
         input_embedding = torch.cat([mask_embedding.unsqueeze(1), bigrams], dim=1)  # (?, 3, dim)
-        outputs = self.tree_encoder(input_embedding.transpose(0, 1)).transpose(0, 1)  # (?, 3, dim)
+        outputs = self.tree_encoder(input_embedding)  # (?, 3, dim)
         mask_hidden = self.norm(outputs[:, 0, :])  # (?, dim)
         return self.classifier(self.cls_dense(mask_hidden))
 
@@ -57,7 +57,7 @@ class R2D2(R2D2Base):
             .to(self.device).unsqueeze(0).expand(sz, -1)  # (?, 2)
         tasks_embedding = self.embedding(task_ids)  # (?, 2, dim)
         input_embedding = torch.cat([tasks_embedding, tensor_batch], dim=1)  # (?, 4, dim)
-        outputs = self.tree_encoder(input_embedding.transpose(0, 1)).transpose(0, 1)  # (? * batch_size, 4, dim)
+        outputs = self.tree_encoder(input_embedding)  # (? * batch_size, 4, dim)
         blend_logits = outputs[:, 0, :].view(row_len, batch_size, dim)  # (?, batch_size, dim)
         h_ik = outputs[:, -2, :].view(row_len, batch_size, dim)  # (?, batch_size, dim)
         h_kj = outputs[:, -1, :].view(row_len, batch_size, dim)  # (?, batch_size, dim)
