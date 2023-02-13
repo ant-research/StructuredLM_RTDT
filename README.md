@@ -1,8 +1,10 @@
 # R2D2/Fast-R2D2
 
-This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (accepted by ACL2021), [R2D2_original_version](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
+This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021 Oral), [R2D2_original_version](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
 
-and "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (accepted by EMNLP2022)
+"[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (EMNLP2022)
+
+"[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023)
 
 The model pretrained on WikiText-103: [release](https://github.com/alipay/StructuredLM_RTDT/releases/tag/fast-R2D2)
 
