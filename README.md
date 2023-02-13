@@ -4,7 +4,7 @@ This is the official code for paper titled "[R2D2: Recursive Transformer based o
 
 "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (EMNLP2022)
 
-"[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023)
+"[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023) To be released soon...
 
 The model pretrained on WikiText-103: [release](https://github.com/alipay/StructuredLM_RTDT/releases/tag/fast-R2D2)
 
