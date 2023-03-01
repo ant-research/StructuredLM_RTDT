@@ -8,6 +8,8 @@ This is the official code for paper titled "[R2D2: Recursive Transformer based o
 
 The model pretrained on WikiText-103: [release](https://github.com/alipay/StructuredLM_RTDT/releases/tag/fast-R2D2)
 
+If you find our work helpful, please give us a star~
+
 ## Requires
 gcc >= 5.0,
 pytorch == 1.9.0+cu111,
@@ -29,10 +31,15 @@ python -m unittest unittests/cuda_unittest.py
 WikiText103: https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
 
 GLUE: https://gluebenchmark.com/tasks
+
 SNIPS: https://github.com/sonos/nlu-benchmark/tree/master/2017-06-custom-intent-engines
+
 ATIS: https://github.com/howl-anderson/ATIS_dataset/tree/master/data
+
 stanfordLU: https://atmahou.github.io/attachments/StanfordLU.zip
+
 MIT SLS movie: https://groups.csail.mit.edu/sls/downloads/movie/
+
 MIT SLS restaurant: https://groups.csail.mit.edu/sls/downloads/restaurant/
 
 ## Dataset preprocess
