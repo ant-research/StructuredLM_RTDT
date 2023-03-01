@@ -1,6 +1,5 @@
 import codecs
 from random import random
-from utils.treebank_processor import get_tags_tokens_lowercase
 import re
 from utils.misc import _align_spans, get_sentence_from_words
 import numpy as np
@@ -60,7 +59,6 @@ def convert_txt_to_ids_spans(path, tokenizer, seperator, output_path, max_len=32
                         atom_spans.append([st, ed])
                 tokens = tokenizer.tokenize(line)
                 ids = tokenizer.convert_tokens_to_ids(tokens)
-                
                 if len(ids) < max_len:
                     ids_str = ' '.join([str(_) for _ in ids])
                     spans_str = ';'.join([f'{span[0]},{span[1]}' for span in atom_spans])
@@ -68,9 +66,8 @@ def convert_txt_to_ids_spans(path, tokenizer, seperator, output_path, max_len=32
                     total_sentences += 1
                 else:
                     discard_sentences += 1
-                if total_sentences % 100 == 0 and total_sentences > 0:
-                    print(f'all sentence: {total_sentences}, discard rate: {discard_sentences / total_sentences}')
-
+            if total_sentences % 100 == 0 and total_sentences > 0:
+                print(f'all sentence: {total_sentences}, discard rate: {discard_sentences / total_sentences}')
 
 
 def avg_length_statistics(path):
@@ -121,29 +118,21 @@ def random_select_sentences(path, output_path, ranges, size_per_range):
                         print(' '.join(ids), file=f_out)
 
 
-def transfer_ptb_to_raw(input_path, output_path, seperator= " "):
-    with codecs.open(input_path, mode='r', encoding='utf-8') as fin, \
-        codecs.open(output_path, mode='w', encoding='utf-8') as fout:
-        for line in fin:
-            _, _, token_lower = get_tags_tokens_lowercase(line)
-            print(seperator.join(token_lower), file=fout)
-
-
 if __name__ == '__main__':
     cmd = argparse.ArgumentParser("Arguments for data processor")
     cmd.add_argument('--config_path', type=str)
     cmd.add_argument('--corpus_path', type=str, required=True)
     cmd.add_argument('--vocab_dir', type=str)
     cmd.add_argument('--output_path', type=str, required=True)
-    cmd.add_argument('--keep_span', default=False, action='store_true')
-    cmd.add_argument('--task_type', choices=['split', 'tokenizing', 'sampling', 'ptb_to_raw'], default='split')
-    cmd.add_argument('--seperator', default=' ', type=str)
+    cmd.add_argument('--keep_span', action='store_true', default=False)
+    cmd.add_argument('--task_type', choices=['split', 'tokenizing', 'sampling'], default='split')
+    cmd.add_argument('--splitter', default='.', type=str)
     args = cmd.parse_args(sys.argv[1:])
 
     # For splitting wiki corpus
     if args.task_type == 'split':
         split_wiki_corpus(args.corpus_path, args.output_path, 
-                        r'(\s\.\s)', [" @-@ ", " @,@ ", " @.@ "])
+                        rf'(\s\.\s)', [" @-@ ", " @,@ ", " @.@ "])
     elif args.task_type == 'tokenizing':
         # For converting english text to ids
         from transformers import AutoConfig, AutoTokenizer
@@ -153,9 +142,7 @@ if __name__ == '__main__':
         if not args.keep_span:
             convert_txt_to_ids(args.corpus_path, tokenizer, args.output_path, max_len=200)
         else:
-            convert_txt_to_ids_spans(args.corpus_path, tokenizer, args.seperator, args.output_path, 
-                                     max_len = 200)
+            convert_txt_to_ids_spans(args.corpus_path, tokenizer, seperator = ' ', 
+                                     output_path=args.output_path, max_len=200)
     elif args.task_type == 'sampling':
         random_select_sentences(args.corpus_path, args.output_path, [50, 100, 200, 500], 1000)
-    elif args.task_type == 'ptb_to_raw':
-        transfer_ptb_to_raw(args.corpus_path, args.output_path, args.seperator)

@@ -3,7 +3,7 @@
 # Author: Xiang Hu
 
 import logging
-
+import numpy as np
 from model.r2d2_base import R2D2Base
 from typing import List, Tuple
 import torch.nn as nn
@@ -17,16 +17,19 @@ from functools import partial, reduce
 from utils.math_util import gumbel_softmax
 from utils.table_converter import convert_cuda_tables
 import r2d2lib
+from utils.tree_utils import get_cache_size, get_tree_from_merge_trajectory
 
 
 logger = logging.getLogger(__name__)
 
 
 class R2D2Cuda(R2D2Base):
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         super().__init__(config)
 
         # initialize model parameters
+        self.span_decoder = False
+        
         self.tree_encoder = BinaryEncoder(config)
         if self.tie_decoder:
             self.tree_decoder = self.tree_encoder
@@ -47,7 +50,7 @@ class R2D2Cuda(R2D2Base):
         if hasattr(config, "max_feature_num"):
             if config.max_feature_num is not None:
                 self.feature_embeddings = nn.Embedding(config.max_feature_num,
-                                                    config.embedding_dim)
+                                                       config.embedding_dim)
 
         self.norm = nn.InstanceNorm1d(config.hidden_size)
 
@@ -57,14 +60,21 @@ class R2D2Cuda(R2D2Base):
             if config.loss is not None:
                 for loss_params in config.loss:
                     loss_name = loss_params['name']
-                    loss_params = loss_params['params']
+                    if 'params' in loss_params:
+                        params = loss_params['params']
+                    else:
+                        params = {}
+                    if 'keys' in loss_params:
+                        arg_keys = loss_params['keys']
+                        for key in arg_keys:
+                            params[key] = kwargs[key]
                     self.loss_funcs.append(
                         partial(getattr(objectives, f'cuda_{loss_name}'),
-                                **loss_params))
+                                **params))
         if len(self.loss_funcs) == 0:
             self.loss_funcs.append(objectives.cuda_default_lm_loss)
 
-    def create_tensor_cache(self, seq_lens):
+    def create_tensor_cache(self, seq_lens, total_cache_size=-1):
         # e_ij, log_p_ij, log_p_sum_ij
         tensor_cache = TensorCache(
             self.window_size,
@@ -74,7 +84,8 @@ class R2D2Cuda(R2D2Base):
             ],
             dims=[self.input_dim, 1],
             placeholder_num=SPECIAL_TOKEN_NUM,
-            device=self.device)
+            device=self.device,
+            total_cache_size=total_cache_size)
         return tensor_cache
 
     def infer(self, tensor_batch, in_logits=False):
@@ -85,14 +96,21 @@ class R2D2Cuda(R2D2Base):
         :return: Logits on vocabulary: (batch_size, vocab_size)
         """
         sz = tensor_batch.shape[0]
-        mask_ids = torch.zeros([
-            sz,
-        ], dtype=torch.long, device=self.device).fill_(self.mask_token_id)
-        mask_embedding = self.embedding(mask_ids)  # (sz, hidden_dim)
-        input_embedding = torch.cat(
-            [mask_embedding.unsqueeze(1), tensor_batch], dim=1)  # (?, 3, dim)
-        outputs = self.tree_decoder(input_embedding)  # (?, 3, dim)
-        mask_hidden = outputs[:, 0, :]  # (?, dim)
+        
+        if isinstance(self.tree_decoder, BinaryEncoder):
+            mask_ids = torch.zeros([sz,], dtype=torch.long, 
+                                    device=self.device).fill_(self.mask_token_id)
+            mask_embedding = self.embedding(mask_ids)  # (sz, hidden_dim)
+            input_embedding = torch.cat(
+                [mask_embedding.unsqueeze(1), tensor_batch], dim=1)  # (?, 3, dim)
+            outputs = self.tree_decoder(input_embedding)  # (?, 3, dim)
+            mask_hidden = outputs[:, 0, :]  # (?, dim)
+        else:
+            mask_ids = [[self.mask_token_id] for _ in range(sz)]
+            outputs = self.tree_decoder(input_ids = mask_ids, 
+                                        memory = tensor_batch, 
+                                        embeddings = self.embedding)
+            mask_hidden = outputs[:, 0, :]
         if in_logits:
             return self.cls_dense(mask_hidden)
         else:
@@ -102,8 +120,8 @@ class R2D2Cuda(R2D2Base):
     def task_ids(self):
         if self._task_ids is None:
             self._task_ids = torch.tensor([self.cls_token_id, self.sum_token_id],
-                                          dtype=torch.long,
-                                          device=self.device)
+                                            dtype=torch.long,
+                                            device=self.device)
         return self._task_ids
 
     def encode(self, tensor_batch, force_encoding=False):
@@ -113,23 +131,15 @@ class R2D2Cuda(R2D2Base):
                     representation: (?, batch_size, dim)
                     log probability: (?, batch_size)
         """
-        # row_len = tensor_batch.shape[0]
-        # batch_size = tensor_batch.shape[1]
-        # dim = tensor_batch.shape[-1]
-        # result = self.mlp_encoder(
-        #     tensor_batch.view(row_len, batch_size, 2 * dim))
-        # score = F.logsigmoid(self.mlp_scorer(result))
-        # return result, score.squeeze(2)
-
         row_len = tensor_batch.shape[0]
         batch_size = tensor_batch.shape[1]
         dim = tensor_batch.shape[-1]
         tensor_batch = tensor_batch.view(row_len * batch_size, 2, dim)
         sz = tensor_batch.shape[0]
-        if not force_encoding:
-            # (?, 1)
-            tasks_embedding = self.embedding(self.task_ids.unsqueeze(0).expand(sz, -1))
+        # (?, 2)
+        if isinstance(self.tree_encoder, BinaryEncoder):
             # (?, 1, dim)
+            tasks_embedding = self.embedding(self.task_ids.unsqueeze(0).expand(sz, -1))
             input_embedding = torch.cat([tasks_embedding, tensor_batch],
                                         dim=1)  # (?, 4, dim)
             outputs = self.tree_encoder(
@@ -138,25 +148,20 @@ class R2D2Cuda(R2D2Base):
             log_p_ijk = F.logsigmoid(
                 self.score_linear(outputs[:, 0, :]).view(
                     row_len, batch_size))  # (?, batch_size)
+
             logits = outputs[:, 1, :].view(row_len, batch_size, dim)  # (?, batch_size, dim)
             w_ijk = F.softmax(self.blender(logits), dim=-1)  # (?, batch_size, 2)
             h_ik_kj = outputs[:, -2:, :].view(row_len, batch_size, 2, dim)
             c_ijk = torch.einsum("ijk,ijk...->ij...", w_ijk, h_ik_kj)  # (?, batch_size, dim)
-
             return self.norm(c_ijk), log_p_ijk
         else:
-            tasks_embedding = self.embedding(self.task_ids[1].unsqueeze(0).expand(sz, -1))
-            # (?, 1, dim)
-            input_embedding = torch.cat([tasks_embedding, tensor_batch],
-                                        dim=1)  # (?, 3, dim)
-            outputs = self.tree_encoder(
-                input_embedding)  # (? * batch_size, 4, dim)
-            logits = outputs[:, 0, :].view(row_len, batch_size, dim)  # (?, batch_size, dim)
-            w_ijk = F.softmax(self.blender(logits), dim=-1)  # (?, batch_size, 2)
-            h_ik_kj = outputs[:, -2:, :].view(row_len, batch_size, 2, dim)
-            c_ijk = torch.einsum("ijk,ijk...->ij...", w_ijk, h_ik_kj)  # (?, batch_size, dim)
-
-            return self.norm(c_ijk), None
+            outputs = self.tree_encoder(input_ids_batch = self.task_ids.unsqueeze(0).expand(sz, -1),
+                                        memory = tensor_batch,
+                                        embeddings = self.embedding)
+            c_ijk = outputs[:, 0, :].view(row_len, batch_size, dim)
+            log_p_ijk = F.logsigmoid(self.score_linear(outputs[:, 1, :]).view(row_len, batch_size))
+            return c_ijk, log_p_ijk
+        
 
     def initialize_embeddings(self, input_ids, seq_lens, input_embeddings=None,
                                feature_ids_list=None, tensor_cache = None,
@@ -290,12 +295,15 @@ class R2D2Cuda(R2D2Base):
                 lm_loss: bool = True):
         """
         :param sample_trees: If train a parser, specify the num of trees to sample
-        :param merge_trajectories: The merge order during pruning.
+        :param merge_trajectories: The merge
         :param keep_tensor_cache: Flag indicates whether the tensor cache used in encoding is returned
         :param feature_ids_list: list of (batch_size, seq_len): add extra feature ids
         :param recover_tree: Indicator for whether encoding actions are kept
         :param input_ids: (batch_size, seq_len)
         :param attention_mask: (batch_size, seq_len)
+        :param input_embeddings: (batch_size, seq_len, dim)
+                                 Overrides the representation of inputs.
+                                 Could be applied to speeding up multi-round dialog encoding.
         :return: Dictionary contains encoding results, bilm loss(lm_loss=True), trees(recover_tree=True), 
                 sampled trees(sample_trees>0).
         """
@@ -324,8 +332,19 @@ class R2D2Cuda(R2D2Base):
                                           dtype=torch.float,
                                           device=self.device)
         log_p_ij_sum_holders[INF_LOG_P_ID] = -1e7  # float('-inf')
-        seq_lens_np = seq_lens.to("cpu").numpy()
-        tensor_cache = self.create_tensor_cache(seq_lens_np)
+        seq_lens_np = seq_lens.cpu().numpy()
+        if merge_trajectories is not None:
+            merge_traj_np = merge_trajectories.cpu().numpy()
+            total_cache_size = 0
+            for sent_i in range(seq_lens_np.shape[0]):
+                _, merge_order = get_tree_from_merge_trajectory(\
+                    merge_traj_np[sent_i], seq_lens_np[sent_i], keep_merge_order=True)
+                cache_size = get_cache_size(merge_order, seq_lens_np[sent_i], self.window_size)
+                total_cache_size += cache_size
+            tensor_cache = self.create_tensor_cache(seq_lens_np, total_cache_size)
+        else:
+            tensor_cache = self.create_tensor_cache(seq_lens_np)
+
         tensor_cache.init_placeholders(
             [CacheSlots.E_IJ, CacheSlots.LOG_P_IJ_SUM],
             [placeholders_embedding, log_p_ij_sum_holders])
@@ -334,7 +353,7 @@ class R2D2Cuda(R2D2Base):
         tables.encoding_start(seq_lens, SPECIAL_TOKEN_NUM,
                               tensor_cache.detach_offset, INF_LOG_P_ID)
         if merge_trajectories is not None:
-            tables.set_merge_trajectories(merge_trajectories)
+            tables.set_merge_trajectories(merge_trajectories.clone())
 
         # cache_id tensor
         cache_ids = torch.full([sum(seq_lens) * self.window_size * 2],
@@ -379,7 +398,11 @@ class R2D2Cuda(R2D2Base):
             loss_params = LMLossParam(model=self,
                                       chart_tables=tables,
                                       tensor_cache=tensor_cache,
-                                      flatten_input_ids=flatten_input_ids)
+                                      flatten_input_ids=flatten_input_ids,
+                                      input_ids=input_ids,
+                                      s_indices=merge_trajectories,
+                                      atom_spans=atom_spans,
+                                      seq_lens=seq_lens_np)
             loss = reduce(lambda a, x: a + x(loss_params), self.loss_funcs, 0)
         else:
             loss = 0

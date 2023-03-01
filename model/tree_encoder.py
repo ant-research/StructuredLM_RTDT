@@ -1,12 +1,16 @@
 # coding=utf-8
 # Copyright (c) 2021 Ant Group
+# Author: Xiang Hu
 
+from functools import partial
+import math
+from typing import List, Optional
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
 from copy import deepcopy
-
-from model.r2d2_common import ROLE_LEFT, ROLE_RIGHT
+import numpy as np
+from .r2d2_common import ROLE_LEFT, ROLE_RIGHT
 
 ACTIVATION_POOL = ['relu', 'gelu']
 
@@ -21,7 +25,7 @@ def _get_activation_fn(activation):
 class TreeEncoderLayer(nn.Module):
     def __init__(self, d_model, nhead, dim_feedforward, dropout, max_role_count, activation='gelu'):
         super().__init__()
-        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first=True)
+        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.dropout = nn.Dropout(dropout)
         self.linear2 = nn.Linear(dim_feedforward, d_model)
@@ -43,8 +47,8 @@ class TreeEncoderLayer(nn.Module):
         :return:
         """
         if len(pos_ids.shape) == 1:
-            sz = src.shape[0]  # sz: batch_size
-            pos_ids = pos_ids.unsqueeze(0).expand(sz, -1)  # (3, batch_size)
+            sz = src.shape[1]  # sz: batch_size
+            pos_ids = pos_ids.unsqueeze(1).expand(-1, sz)  # (3, batch_size)
         position_embedding = self.position_embedding(pos_ids)
         src2 = self.self_attn(src + position_embedding, src + position_embedding, src, attn_mask=src_mask)[0]
         src = src + self.dropout1(src2)
@@ -106,7 +110,8 @@ class BinaryEncoder(nn.Module):
                 self._mask_cache[task_count] = src_mask
             src_mask = self._mask_cache[task_count]
 
+        output = src.permute(1, 0, 2)
         for mod in self.layers:
             output = mod(output, src_mask, pos_ids)
 
-        return output
+        return output.permute(1, 0, 2)

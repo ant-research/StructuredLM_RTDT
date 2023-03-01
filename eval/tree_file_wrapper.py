@@ -31,6 +31,20 @@ def convert_to_binary_node(root, pos=0):
     else:
         return BinaryNode(None, None, pos, root.string), 1
 
+def to_latex_tree(root):
+    if isinstance(root, ConstTree):
+        if len(root.children) >= 2:
+            child_repr = []
+            for node in root.children:
+                child_repr.append(to_latex_tree(node))
+            expr = ''.join(child_repr)
+            return f'[{expr}]'
+        else:
+            current = root.children[0]
+            return to_latex_tree(current)
+    else:
+        return f'[{root.string}]'
+
 
 class TreeFileWrapper(TreeDecoderWrapper):
     def __init__(self, tree_file):
@@ -47,8 +61,7 @@ class TreeFileWrapper(TreeDecoderWrapper):
                 tokens = [_lexicon.string for _lexicon in lexicons]
                 self._sentences.append(tokens)
                 key = u' '.join(tokens)
-                root, _ = convert_to_binary_node(tree)
-                table[key.lower()] = root
+                table[key.lower()] = tree
                 for _lexicon in lexicons:
                     self._indexer.setdefault(_lexicon.string, set())
                     self._indexer[_lexicon.string].add(s_idx)
@@ -77,10 +90,15 @@ class TreeFileWrapper(TreeDecoderWrapper):
             return self._entries[key], list(range(len(tokens)))
         else:
             return self._index(tokens)
-        return None, None
 
     def print_binary_ptb(self, tokens) -> str:
-        raise Exception('No implementation')
+        const_tree, _ = self(tokens)
+        binary_node = convert_to_binary_node(const_tree)
+        return binary_node.to_tree(ptb=True)
+
+    def print_latex_tree(self, tokens) -> str:
+        const_tree, _ = self(tokens)
+        return to_latex_tree(const_tree)
 
 
 class WordPieceTreeFileWrapper(TreeFileWrapper):

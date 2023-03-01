@@ -7,14 +7,14 @@ import torch
 
 
 class R2D2Base(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         super().__init__()
         self.vocab_size = config.vocab_size
         self.input_dim = config.hidden_size
         self.hidden_dim = config.intermediate_size
         self.window_size = config.window_size
         self.embedding = nn.Embedding(self.vocab_size, self.input_dim)
-        self.classifier = nn.Linear(self.hidden_dim, config.vocab_size)
+        self.classifier = nn.Linear(self.input_dim, config.vocab_size)
 
         self.tie_decoder = getattr(config, 'tie_decoder', True)
         self.cls_token_id = config.cls_token_id
