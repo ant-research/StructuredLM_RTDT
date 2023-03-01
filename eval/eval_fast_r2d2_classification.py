@@ -4,12 +4,9 @@ import logging
 import os
 import torch
 import sys
-import numpy as np
 from torch.utils.data import DataLoader, SequentialSampler
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoConfig
-from model.fast_r2d2_downstream import FastR2D2Classification, FastR2D2CrossSentence
-from model.fast_r2d2_dp_classification import FastR2d2DPClassification
+from transformers import AutoTokenizer
 from model.fast_r2d2_dp_classification import FastR2d2DPClassification
 from reader.snips_reader import SnipsReader
 from sklearn.metrics import accuracy_score

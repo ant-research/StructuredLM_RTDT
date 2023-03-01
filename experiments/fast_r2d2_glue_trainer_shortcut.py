@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, SequentialSampler, RandomSampler, Distr
 from tqdm import tqdm, trange
 from transformers import AutoTokenizer, AutoConfig, AdamW, get_linear_schedule_with_warmup
 from experiments.eval_fast_r2d2_shortcut import GlueEvaluater
-from experiments.glue_reader_shortcut import GlueReaderWithShortcut,GlueReaderForDPWithShortcut
+from experiments.glue_reader_shortcut import GlueReaderForDPWithShortcut
 from experiments.fast_r2d2_shortcut import FastR2D2DPClassificationShortcut
 
 

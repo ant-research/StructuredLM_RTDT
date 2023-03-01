@@ -13,15 +13,20 @@ class TensorCache:
                   cache_types,
                   dims,
                   placeholder_num,
-                  device):
+                  device, 
+                  total_cache_size=-1):
         self.placeholder_num = placeholder_num  #
-        self.block_sizes = [0] * len(seq_lens)
-        self._init_blocks_size(seq_lens, max_window)
         self.total_block_size = placeholder_num
-        for i in range(len(seq_lens)):
-            self.total_block_size += self.block_sizes[i]
 
-        self._current_front = placeholder_num
+        if total_cache_size == -1:
+            self.block_sizes = [0] * len(seq_lens)
+            self._init_blocks_size(seq_lens, max_window)
+            for i in range(len(seq_lens)):
+                self.total_block_size += self.block_sizes[i]
+        else:
+            self.total_block_size += total_cache_size
+
+        self._max_lengths = [placeholder_num] * len(cache_types)
         self._cache_num = len(cache_types)
         self.cache_types = cache_types
         self.caches = [None] * self._cache_num
@@ -33,10 +38,6 @@ class TensorCache:
                 self.caches[i] = torch.full((self.total_block_size * 2, dims[i]), 0.0, device=device)
 
     @property
-    def current_cache_range(self):
-        return self.placeholder_num, self._current_front
-
-    @property
     def capacity(self):
         return self.total_block_size
 
@@ -44,11 +45,8 @@ class TensorCache:
     def detach_offset(self):
         return self.total_block_size
 
-    def next_cache_id(self):
-        next_id = self._current_front
-        self._current_front += 1
-        assert self._current_front <= self.total_block_size
-        return next_id
+    def get_cache_range(self, cache_id):
+        return self.placeholder_num, self._max_lengths[cache_id]
 
     def init_placeholders(self, cache_ids, values):
         for cache_id, value in zip(cache_ids, values):
@@ -75,7 +73,7 @@ class TensorCache:
             gather_indices = torch.tensor(indices, dtype=torch.long, device=self.device)
         for cache_id in cache_ids:
             tensor_block = self.caches[cache_id]
-            tensor_gather = tensor_block.index_select(dim=0, index=gather_indices)
+            tensor_gather = tensor_block.index_select(dim=0, index=gather_indices).contiguous()
             tensors_gathered.append(tensor_gather)
         return tensors_gathered
 
@@ -86,6 +84,7 @@ class TensorCache:
         for cache_id, value in zip(cache_ids, values):
             tensor_block = self.caches[cache_id]
             tensor_block[cache_id_offset: cache_id_offset + cache_id_len] = value
+            self._max_lengths[cache_id] = max(self._max_lengths[cache_id], cache_id_offset + cache_id_len)
             if self.cache_types[cache_id] == CacheType.DETACH:
                 detach_offset = self.total_block_size + cache_id_offset
                 tensor_block[detach_offset: detach_offset + cache_id_len] = value.detach()
@@ -93,6 +92,9 @@ class TensorCache:
     def get(self, cache_id, idx):
         assert self.caches[cache_id] is not None
         return self.caches[cache_id][idx]
+
+    def get_tensor_cache(self, cache_id):
+        return self.caches[cache_id]
 
     def detach(self, idx):
         detach_idx = self.total_block_size + idx

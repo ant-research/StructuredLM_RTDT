@@ -1,6 +1,5 @@
 import argparse
 import sys
-import json
 import logging
 import os
 import torch
@@ -16,15 +15,8 @@ from reader.slu_reader import StanfordLUReader
 from reader.sls_reader import SLSReader
 from experiments.f1_evaluator import F1Evaluator
 from utils.model_loader import load_model
-from utils.misc import convert_char_span_to_tokenized_span_atis
 from collections import deque
-from sklearn.metrics import precision_score, recall_score, f1_score
-# from multiprocessing.spawn import import_main_path
-# from operator import imod
-# from ast import arg
-# from cgi import print_arguments
-# from functools import total_ordering
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import f1_score
 
 
 

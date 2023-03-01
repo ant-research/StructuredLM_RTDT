@@ -291,3 +291,10 @@ class ConstTree:
             else:
                 _children.append(c)
         return ConstTree(self.tag, _children)
+
+class SpanTree:
+    def __init__(self, st, ed, subtrees=[]) -> None:
+        self.st = st
+        self.ed = ed
+        self.subtrees = subtrees
+        self.cache_id = -1

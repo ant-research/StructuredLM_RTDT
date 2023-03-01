@@ -1,13 +1,11 @@
 import argparse
 import torch
 import codecs
-import traceback
 import json
 import os
 from eval.tree_file_wrapper import TreeFileWrapper
 from model.fast_r2d2_dp_classification import FastR2D2DPClassification
 from eval.r2d2_wrapper import R2D2dpParserWrapper
-from tqdm import tqdm
 import pandas as pd
 
 

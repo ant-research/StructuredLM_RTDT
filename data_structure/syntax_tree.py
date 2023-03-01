@@ -32,11 +32,12 @@ class ConllTree:
 
 
 class BinaryNode:
-    def __init__(self, left, right, pos, token):
+    def __init__(self, left, right, pos, token, **kwargs):
         self.left = left
         self.right = right
         self.pos = pos
         self.token = token
+        self.label = kwargs.get('label', None)
         self._start = None
         self._end = None
         self._depth = -1
@@ -108,6 +109,17 @@ class BinaryNode:
         else:
             expr = self.token.replace('#', '\\#').replace('.', '\\\\.').replace(',', '{,}')
             return f'[{expr}]'
+
+    def to_latex_tree_qTree(self):
+        if self.left is not None and self.right is not None:
+            label = str(self.label) if self.label is not None else 'none'
+            left_token_expr = self.left.to_latex_tree_qTree()
+            right_token_expr = self.right.to_latex_tree_qTree()
+            return f'[.{label} {left_token_expr} {right_token_expr} ]'
+        else:
+            label = str(self.label) if self.label is not None else 'none'
+            # expr = self.token.replace('#', '\\#').replace('.', '\\\\.').replace(',', '{,}')
+            return f'[.{label} {self.token} ]'
 
     def to_spans(self, offset=0):
         span_set = set()

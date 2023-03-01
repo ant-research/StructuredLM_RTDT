@@ -11,7 +11,6 @@ from tqdm import tqdm
 import time
 import multiprocessing
 from reader.memory_line_reader import BatchSelfRegressionLineDataset
-import torch.multiprocessing as mp
 
 
 class Processor(multiprocessing.Process):

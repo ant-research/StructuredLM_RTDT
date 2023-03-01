@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from transformers import AutoModel, AutoConfig
 
 import numpy as np
-import os
 from collections import deque
 from data_structure.const_tree import SpanTree
 

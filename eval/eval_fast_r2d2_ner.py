@@ -1,6 +1,5 @@
 import argparse
 import sys
-import json
 import logging
 import os
 import torch
@@ -12,9 +11,8 @@ from transformers import AutoTokenizer, AutoConfig
 from model.fast_r2d2_dp_classification import FastR2d2DPClassification
 from reader.multi_label_reader import MultiLabelReader
 from utils.model_loader import load_model
-from collections import deque
-from sklearn.metrics import precision_score, recall_score, f1_score
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score
 
 
 
@@ -104,14 +102,10 @@ class MultiLabelEvaluater:
                     f1 = f1_score(y_trues_onehot, y_preds, average='weighted')
                     if f1>max_f1_weighted:
                         max_f1_weighted = f1
-                        best_threshold_weighted = threshold
                     threshold+=0.01
-            # precision_micro = precision_score(y_trues, y_preds, average='micro')
-            # recall_micro = recall_score(y_trues, y_preds, average='micro')
             
         self.logger.info(f'eval result f1_micro {max_f1_micro} f1_weighted {max_f1_weighted} acc {max_acc}')
         return max_acc
-        # self.logger.info(f'eval result {acc}')
 
 
 if __name__ == "__main__":

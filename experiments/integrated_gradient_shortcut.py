@@ -18,8 +18,6 @@ import torch
 import logging
 import torch.nn as nn
 from transformers import AutoConfig, AutoModel
-import torch.nn.functional as F
-import numpy as np
 
 
 class BertForMultiIntentWrapper(nn.Module):

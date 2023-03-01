@@ -1,5 +1,4 @@
 import argparse
-from email.policy import strict
 import logging
 import os
 import time
@@ -14,7 +13,6 @@ from reader.multi_label_reader import MultiLabelReader
 from reader.snips_reader import SnipsReader
 from reader.slu_reader import StanfordLUReader
 from reader.sls_reader import SLSReader
-from utils.model_loader import load_model
 from trainer.fast_r2d2_pretrain import set_seed
 from trainer.model_factory import create_bert_model
 import glob

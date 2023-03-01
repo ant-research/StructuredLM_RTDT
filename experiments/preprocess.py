@@ -1,10 +1,10 @@
+# coding=utf-8
+# Copyright (c) 2021 Ant Group
+
 from supar import Parser
 import codecs
 from nltk.tree import Tree
 import json
-# coding=utf-8
-# Copyright (c) 2021 Ant Group
-
 from tqdm import tqdm
 import pandas as pd
 import sys
