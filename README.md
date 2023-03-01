@@ -1,10 +1,10 @@
 # R2D2/Fast-R2D2
 
-This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021 Oral), [R2D2_original_version](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
+This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021 Oral), [R2D2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
 
-"[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (EMNLP2022)
+"[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (EMNLP2022),[Fast_r2d2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/fast-R2D2)
 
-"[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023) To be released soon...
+"[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023) current main branch
 
 The model pretrained on WikiText-103: [release](https://github.com/alipay/StructuredLM_RTDT/releases/tag/fast-R2D2)
 
@@ -190,6 +190,13 @@ python eval/eval_speed.py \
     --batch_size \
     $BATCH_SIZE
 ```
+
+# Run experiments about self-interpretable classification model
+The backbone for the self-interpretable classification model is in mode/fast_r2d2_dp_classification.
+
+The scripts to run experiments described in our paper could be found under the scripts folder.
+
+The pretrained Fast-R2D2 coud be found at [release](https://github.com/alipay/StructuredLM_RTDT/releases/tag/fast-R2D2)
 
 ## Contact 
 
