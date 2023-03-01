@@ -29,6 +29,11 @@ python -m unittest unittests/cuda_unittest.py
 WikiText103: https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
 
 GLUE: https://gluebenchmark.com/tasks
+SNIPS: https://github.com/sonos/nlu-benchmark/tree/master/2017-06-custom-intent-engines
+ATIS: https://github.com/howl-anderson/ATIS_dataset/tree/master/data
+stanfordLU: https://atmahou.github.io/attachments/StanfordLU.zip
+MIT SLS movie: https://groups.csail.mit.edu/sls/downloads/movie/
+MIT SLS restaurant: https://groups.csail.mit.edu/sls/downloads/restaurant/
 
 ## Dataset preprocess
 
