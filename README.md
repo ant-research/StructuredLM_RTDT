@@ -203,7 +203,7 @@ python eval/eval_speed.py \
     $BATCH_SIZE
 ```
 
-# Run experiments about self-interpretable classification model
+## Run experiments about self-interpretable classification model
 The backbone for the self-interpretable classification model is in mode/fast_r2d2_dp_classification.
 
 The scripts to run experiments described in our paper could be found under the scripts folder.
