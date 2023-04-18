@@ -13,7 +13,11 @@ LMLossParam = namedtuple(
         'model',
         'chart_tables',
         'tensor_cache',
-        'flatten_input_ids'
+        'input_ids',
+        'flatten_input_ids',
+        's_indices',
+        'atom_spans',
+        'seq_lens'
     ]
 )
 

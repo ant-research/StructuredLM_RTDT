@@ -2,6 +2,25 @@ import unicodedata
 import numpy as np
 
 
+def convert_char_span_to_tokenized_span_atis(offset_mappings, char_start, char_end):
+    token_start_pos = token_end_pos = -1
+    for token_pos, (char_st, char_ed) in enumerate(offset_mappings):
+        if char_st == char_start:
+            token_start_pos = token_pos
+        if char_ed == char_end:
+            token_end_pos = token_pos
+
+    if token_start_pos == -1 or token_end_pos == -1:
+        for token_pos, (char_st, char_ed) in enumerate(offset_mappings):
+            if char_st == char_start -1:
+                token_start_pos = token_pos
+            if char_ed == char_end - 1:
+                token_end_pos = token_pos
+    assert token_start_pos != -1
+    assert token_end_pos != -1
+    return token_start_pos, token_end_pos
+
+
 def get_all_subword_id(mapping, idx):
     current_id = mapping[idx]
     id_for_all_subwords = [tmp_id for tmp_id, v in enumerate(mapping) if v == current_id]
@@ -103,13 +122,3 @@ def get_sentence_from_words(words, word_sep):
     sentence = word_sep.join(sentence)
 
     return sentence, word_char_spans
-
-def load_vocab(vocab_file):
-    word2idx = {}
-    idx2word = {}
-    for line in open(vocab_file, 'r', encoding='utf-8'):
-        v, k = line.strip().split()
-        word2idx[v] = int(k)
-    for word, idx in word2idx.items():
-        idx2word[idx] = word
-    return word2idx, idx2word

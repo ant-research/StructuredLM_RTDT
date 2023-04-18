@@ -6,9 +6,9 @@ import torch
 import os
 from transformers import AutoTokenizer, AutoConfig
 from data_structure.syntax_tree import BinaryNode
-from utils.misc import get_sentence_from_words, _align_spans, load_vocab
+from utils.misc import get_sentence_from_words, _align_spans
 from utils.model_loader import load_model
-from model.topdown_parser import TopdownParser
+from model.topdown_parser import LSTMParser, TransformerParser
 from eval.tree_wrapper import TreeDecoderWrapper
 from data_structure.basic_structure import AtomicSpans
 from utils.tree_utils import get_tree_from_merge_trajectory, get_tree_from_merge_trajectory_in_word
@@ -97,11 +97,23 @@ class ChartModelWrapper(TreeDecoderWrapper):
 
 
 class R2D2ParserWrapper(TreeDecoderWrapper):
-    def __init__(self, config_path, model_cls, model_path, parser_path, parser_only, sep_word, device, in_word=False, kv_dict=False):
+    def __init__(self, 
+                 config_path, 
+                 model_cls, 
+                 model_path, 
+                 parser_path,
+                 parser_only, 
+                 sep_word, 
+                 device, 
+                 in_word=False,
+                 transformer_parser=False):
         config_dir = os.path.dirname(config_path)
         config = AutoConfig.from_pretrained(config_path)
         self._model = model_cls(config)
-        self._parser = TopdownParser(config)
+        if not transformer_parser:
+            self._parser = LSTMParser(config)
+        else:
+            self._parser = TransformerParser(config)
         self._sep_word = sep_word
         self._model.from_pretrain(model_path)
         self._parser_only = parser_only
@@ -113,12 +125,7 @@ class R2D2ParserWrapper(TreeDecoderWrapper):
         self._device = device
         self._model.eval()
         self._parser.eval()
-        self._kv_dict = kv_dict
-        if not self._kv_dict:
-            self._tokenizer = AutoTokenizer.from_pretrained(config_dir, config=config, use_fast=True)
-        else:
-            self._word2idx, self._idx2word = load_vocab(os.path.join(config_dir, 'vocab.txt'))
-
+        self._tokenizer = AutoTokenizer.from_pretrained(config_dir, config=config, use_fast=True)
 
     def _transfer_to_binary_node(self, node, tokens):
         if node.is_leaf:
@@ -129,32 +136,20 @@ class R2D2ParserWrapper(TreeDecoderWrapper):
                               None, None)
 
     def __call__(self, tokens):
-        if not self._kv_dict:
-            sentence, spans = get_sentence_from_words(tokens, self._sep_word)
-            outputs = self._tokenizer.encode_plus(sentence,
-                                                add_special_tokens=False,
-                                                return_offsets_mapping=True)
-            new_spans = outputs['offset_mapping']
-            word_starts, word_ends = _align_spans(spans, new_spans)
-            atom_spans = []
-            indices_mapping = [0] * len(outputs['input_ids'])
-            for pos, (st, ed) in enumerate(zip(word_starts, word_ends)):
-                if ed > st:
-                    atom_spans.append([st, ed])
-                for idx in range(st, ed + 1):
-                    indices_mapping[idx] = pos
-            id_to_tokens = self._tokenizer.convert_ids_to_tokens
-        else:
-            token_indices = []
-            for t in tokens:
-                if t.lower() in self._word2idx:
-                    token_indices.append(self._word2idx[t.lower()])
-                else:
-                    token_indices.append(self._word2idx['<unk>'])
-            outputs = {'input_ids': token_indices, 'attention_mask': [1] * len(token_indices)}
-            def _id_to_token(ids):
-                return tokens
-            id_to_tokens = _id_to_token
+        sentence, spans = get_sentence_from_words(tokens, self._sep_word)
+        outputs = self._tokenizer.encode_plus(sentence,
+                                              add_special_tokens=False,
+                                              return_offsets_mapping=True)
+        new_spans = outputs['offset_mapping']
+        word_starts, word_ends = _align_spans(spans, new_spans)
+        atom_spans = []
+        indices_mapping = [0] * len(outputs['input_ids'])
+        for pos, (st, ed) in enumerate(zip(word_starts, word_ends)):
+            if ed > st:
+                atom_spans.append([st, ed])
+            for idx in range(st, ed + 1):
+                indices_mapping[idx] = pos
+
         if not self._in_word:
             inputs = {"input_ids": torch.tensor([outputs['input_ids']]).to(self._device),
                     "attention_mask": torch.tensor([outputs['attention_mask']]).to(self._device)}
@@ -166,14 +161,15 @@ class R2D2ParserWrapper(TreeDecoderWrapper):
             if not self._in_word:
                 merge_trajectories = self._parser(**inputs)
                 if self._parser_only:
-                    root, tree_expr = get_tree_from_merge_trajectory(merge_trajectories[0], len(outputs['input_ids']), 
-                                                                     id_to_tokens(outputs['input_ids']))
+                    root, tree_expr = get_tree_from_merge_trajectory(merge_trajectories[0], len(outputs['input_ids']),
+                                                self._tokenizer.convert_ids_to_tokens(outputs['input_ids']))
                 else:
                     results = self._model(**inputs, merge_trajectories=merge_trajectories.clone(), recover_tree=True)
             
-                    root = results['tables'][0].root.best_node
+                    root = results['roots'][0]
 
-                binary_root = self._transfer_to_binary_node(root, id_to_tokens(outputs['input_ids']))
+                binary_root = self._transfer_to_binary_node(root,
+                                                            self._tokenizer.convert_ids_to_tokens(outputs['input_ids']))
             else:
                 merge_trajectories = self._parser(**inputs)
                 if self._parser_only:
@@ -192,3 +188,90 @@ class R2D2ParserWrapper(TreeDecoderWrapper):
     def print_binary_ptb(self, tokens):
         tree = self(tokens)
         return tree.to_tree(ptb=True)
+
+    def print_latex_tree(self, tokens):
+        tree = self(tokens)
+        return tree.to_latex_tree()
+
+
+
+class R2D2dpParserWrapper(TreeDecoderWrapper):
+    def __init__(self, 
+                 config_path, 
+                 model_cls, 
+                 labels,
+                 enable_topdown,
+                 enable_exclusive,
+                 model_path, 
+                 parser_only, 
+                 sep_word, 
+                 device, 
+                 in_word=False):
+        config_dir = os.path.dirname(config_path)
+        config = AutoConfig.from_pretrained(config_path)
+        self._model = model_cls(config, len(labels), apply_topdown=enable_topdown, exclusive=enable_exclusive)
+        self.labels = labels + ['T','NT']
+        self._model.load_model(model_path)
+        # self.labels = labels + ['terminal','unterminal']
+        self._sep_word = sep_word
+        self._parser_only = parser_only
+        self._in_word = in_word
+        self._model.to(device)
+        self._device = device
+        self._model.eval()
+        self._tokenizer = AutoTokenizer.from_pretrained(config_dir, config=config, use_fast=True)
+
+    def _transfer_to_binary_node(self, node, tokens):
+        node_label = self.labels[node.label]
+        if node.is_leaf:
+            return BinaryNode(None, None, node.pos, tokens[node.pos],label=node_label)
+        else:
+            return BinaryNode(self._transfer_to_binary_node(node.left, tokens),
+                              self._transfer_to_binary_node(node.right, tokens),
+                              node.pos, tokens[node.pos], label=node_label)
+
+
+    def __call__(self, tokens):
+        sentence, spans = get_sentence_from_words(tokens, self._sep_word)
+        outputs = self._tokenizer.encode_plus(sentence,
+                                              add_special_tokens=False,
+                                              return_offsets_mapping=True)
+        new_spans = outputs['offset_mapping']
+        word_starts, word_ends = _align_spans(spans, new_spans)
+        atom_spans = []
+        indices_mapping = [0] * len(outputs['input_ids'])
+        for pos, (st, ed) in enumerate(zip(word_starts, word_ends)):
+            if ed > st:
+                atom_spans.append([st, ed])
+            for idx in range(st, ed + 1):
+                indices_mapping[idx] = pos
+
+        if not self._in_word:
+            inputs = {"input_ids": torch.tensor([outputs['input_ids']]).to(self._device),
+                    "attention_mask": torch.tensor([outputs['attention_mask']]).to(self._device)}
+        else:
+            inputs = {"input_ids": torch.tensor([outputs['input_ids']]).to(self._device),
+                    "attention_mask": torch.tensor([outputs['attention_mask']]).to(self._device),
+                    "atom_spans": [atom_spans]}
+        with torch.no_grad():
+
+            results = self._model(**inputs, traverse_all=True)
+    
+            root = results['roots'][0]
+
+            binary_root = self._transfer_to_binary_node(root, 
+                            self._tokenizer.convert_ids_to_tokens(outputs['input_ids']))
+        return binary_root
+
+
+    def print_binary_ptb(self, tokens):
+        tree = self(tokens)
+        return tree.to_tree(ptb=True)
+
+    def print_latex_tree(self, tokens, label=None):
+        tree = self(tokens)
+        expression = tree.to_latex_tree_qTree().split(' ')
+        if label is not None:
+            expression[0] = expression[0] + "(" + label + ")" 
+        expression = ' '.join(expression)
+        return '\Tree ' + expression

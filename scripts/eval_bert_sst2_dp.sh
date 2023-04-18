@@ -1,0 +1,22 @@
+python -m eval.eval_fast_r2d2 \
+    --model_dir \
+    data/save/bert_dp \
+    --config_path \
+    data/bert_12_wiki_103 \
+    --vocab_dir \
+    data/bert_12_wiki_103 \
+    --task_type \
+    sst-2 \
+    --glue_dir \
+    data/glue/SST-2 \
+    --max_batch_len \
+    102400 \
+    --max_batch_size \
+    32 \
+    --turn \
+    $1 \
+    --r2d2_mode \
+    forced \
+    --tree_path \
+    data/glue/SST-2/dev.trees.txt \
+    --model_name bert_dp

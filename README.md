@@ -1,14 +1,16 @@
 # R2D2/Fast-R2D2
 
-This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021 Oral), [R2D2_original_version](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
+This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021 Oral), [R2D2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
 
-"[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (EMNLP2022)
+"[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (EMNLP2022),[Fast_r2d2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/fast-R2D2)
 
-"[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023) To be released soon...
+"[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023) current main branch
 
 Please note r2d2.py is not maintained anymore after Fast-R2D2, so please use the cuda version(r2d2_cuda.py) as your backbone.
 
 The model pretrained on WikiText-103: [release](https://github.com/alipay/StructuredLM_RTDT/releases/tag/fast-R2D2)
+
+If you find our work helpful, please give us a star~
 
 ## Requires
 gcc >= 5.0,
@@ -31,6 +33,16 @@ python -m unittest unittests/cuda_unittest.py
 WikiText103: https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
 
 GLUE: https://gluebenchmark.com/tasks
+
+SNIPS: https://github.com/sonos/nlu-benchmark/tree/master/2017-06-custom-intent-engines
+
+ATIS: https://github.com/howl-anderson/ATIS_dataset/tree/master/data
+
+stanfordLU: https://atmahou.github.io/attachments/StanfordLU.zip
+
+MIT SLS movie: https://groups.csail.mit.edu/sls/downloads/movie/
+
+MIT SLS restaurant: https://groups.csail.mit.edu/sls/downloads/restaurant/
 
 ## Dataset preprocess
 
@@ -192,6 +204,13 @@ python eval/eval_speed.py \
     --batch_size \
     $BATCH_SIZE
 ```
+
+## Run experiments about self-interpretable classification model
+The backbone for the self-interpretable classification model is in mode/fast_r2d2_dp_classification.
+
+The scripts to run experiments described in our paper could be found under the scripts folder.
+
+The pretrained Fast-R2D2 coud be found at [release](https://github.com/alipay/StructuredLM_RTDT/releases/tag/fast-R2D2)
 
 ## Contact 
 
