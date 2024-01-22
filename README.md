@@ -18,6 +18,7 @@ Improve the heuristic pruning module in R2D2 to model-based pruning.
 We explore the interpretability of the structured encoder and find that the induced alignment between labels and spans is highly consistent with human rationality.
 
 "[Augmenting Transformers with Recursively Composed Multi-Grained Representations](https://openreview.net/forum?id=u859gX7ADC)". (ICLR 2024) code will be released soon.
+
 We reduce the space complexity of the deep inside-outside encoder from cubic to linear, and in a parallel environment, we reduce the time complexity to approximately log N. Meanwhile, we find that joint pre-training of Transformers and a composition-based encoder can enhance a variety of NLP downstream tasks.
 
 If you find our work helpful, please give us a star~
