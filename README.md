@@ -1,10 +1,10 @@
-# Milestones
+# R2D2
 
 This library aims to construct syntactic compositional representations for text in an unsupervised manner. The covered areas may involve interpretability, text encoders, and generative language models.
 
 
 ## Milestones
-"[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021 Oral), [R2D2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
+"[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021), [R2D2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
 
 Proposing an unsupervised syntactic language model of linear complexity, based on a neural inside algorithm with heuristic pruning.
 
