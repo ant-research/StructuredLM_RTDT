@@ -21,7 +21,6 @@ We explore the interpretability of the structured encoder and find that the indu
 
 We reduce the space complexity of the deep inside-outside encoder from cubic to linear, and in a parallel environment, we reduce the time complexity to approximately log N. Meanwhile, we find that joint pre-training of Transformers and a composition-based encoder can enhance a variety of NLP downstream tasks.
 
-If you find our work helpful, please give us a star~
 
 ## Requires
 gcc >= 5.0,
