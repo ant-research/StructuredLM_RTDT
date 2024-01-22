@@ -1,4 +1,4 @@
-# R2D2
+# Composition-based Encoder
 
 This library aims to construct syntactic compositional representations for text in an unsupervised manner. The covered areas may involve interpretability, text encoders, and generative language models.
 
