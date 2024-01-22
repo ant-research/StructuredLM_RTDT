@@ -1,14 +1,24 @@
-# R2D2/Fast-R2D2
+# Milestones
 
-This is the official code for paper titled "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021 Oral), [R2D2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
+This library aims to construct syntactic compositional representations for text in an unsupervised manner. The covered areas may involve interpretability, text encoders, and generative language models.
+
+
+## Milestones
+"[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021 Oral), [R2D2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
+
+Proposing an unsupervised syntactic language model of linear complexity, based on a neural inside algorithm with heuristic pruning.
 
 "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (EMNLP2022),[Fast_r2d2_tag](https://github.com/alipay/StructuredLM_RTDT/tree/fast-R2D2)
 
+Improve the heuristic pruning module in R2D2 to model-based pruning.
+
+
 "[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023) current main branch
 
-Please note r2d2.py is not maintained anymore after Fast-R2D2, so please use the cuda version(r2d2_cuda.py) as your backbone.
+We explore the interpretability of the structured encoder and find that the induced alignment between labels and spans is highly consistent with human rationality.
 
-The model pretrained on WikiText-103: [release](https://github.com/alipay/StructuredLM_RTDT/releases/tag/fast-R2D2)
+"[Augmenting Transformers with Recursively Composed Multi-Grained Representations](https://openreview.net/forum?id=u859gX7ADC)". (ICLR 2024) code will be released soon.
+We reduce the space complexity of the deep inside-outside encoder from cubic to linear, and in a parallel environment, we reduce the time complexity to approximately log N. Meanwhile, we find that joint pre-training of Transformers and a composition-based encoder can enhance a variety of NLP downstream tasks.
 
 If you find our work helpful, please give us a star~
 
