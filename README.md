@@ -26,3 +26,37 @@ We reduce the space complexity of the deep inside-outside encoder from cubic to 
 Compile C++ codes.
 
 python setup.py build_ext --inplace
+
+## Dataset preprocessing
+Dataset: WikiText-103
+
+Before pre-training, we preprocess corpus by spliting raw texts to sentences, tokenizing them, and converting them into numpy format.
+
+Split texts into sentences
+
+python utils/data\_processor.py --corput\_path PATH\_TO\_YOUR\_CORPUS --task\_type split --output\_path PATH\_TO\_SPLIT_CORPUS
+
+Tokenize raw texts and convert them into numpy format.
+
+python utils/dataset\_builder.py
+
+## Pre-training
+cd trainer
+
+torchrun --standalone --nnodes=1 --nproc\_per\_node=1 r2d2+\_mlm\_pretrain.py 
+    --config\_path ../data/en_config/r2d2+\_config.json 
+    --model\_type cio --parser_lr 1e-3 
+    --corpus\_path ../../corpus/PATH\_TO\_PREPROCESSED\_CORPUS 
+    --input\_type bin --vocab\_path ../data/en\_config 
+    --epochs 10 --output\_dir ../PRETRAIN\_MODEL\_SAVE\_DIR 
+    --min\_len 2 --log\_step 10 --batch\_size 64 --max\_batch\_len 512 
+    --save\_step 2000 --cache_dir ../pretrain\_cache 
+    --coeff\_decline 0.00 --ascending 
+
+## Downstreawm tasks
+
+Please refer to scripts.
+
+## Contact
+
+aaron.hx@antgroup.com
