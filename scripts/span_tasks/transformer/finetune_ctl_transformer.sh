@@ -1,6 +1,6 @@
     python experiments/span_train.py \
     -data_path data/ontonotes/const/nonterminal \
-    -config_path data/transformer${1}_30/config.json \
+    -config_path data/en_config/transformer${1}_config.json \
     -pretrain_dir data/transformer${1}_30 \
     -task ctl -model_type transformer \
     -batch_size 64 \

@@ -53,9 +53,11 @@ torchrun --standalone --nnodes=1 --nproc\_per\_node=1 r2d2+\_mlm\_pretrain.py
     --save\_step 2000 --cache_dir ../pretrain\_cache 
     --coeff\_decline 0.00 --ascending 
 
-## Downstreawm tasks
+## Downstream tasks
 
-Please refer to scripts.
+We have conducted downstream experiments on span-level tasks using Ontonotes 5.0, sentence-level tasks using GLUE , and structure analysis tasks using PTB. Please refer to `scripts/` directory for more details.
+
+For scripts under `scripts/span_tasks/transformer`, the argument passed inidicates the number of span attention layers in Transformer where we experimented with 6 and 9.
 
 ## Contact
 

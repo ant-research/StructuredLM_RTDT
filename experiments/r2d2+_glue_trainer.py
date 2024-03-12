@@ -4,7 +4,6 @@
 
 import math
 import argparse
-from email.policy import strict
 import logging
 import os
 import shutil
@@ -12,7 +11,6 @@ import time
 import sys
 
 from reader.data_collator import GlueCollator
-# from sklearn import metrics
 sys.path.append(os.getcwd())
 import torch
 from torch.utils.data import DataLoader, SequentialSampler
@@ -108,11 +106,7 @@ class GlueTrainer:
 
         train_iterator = trange(0, int(epochs), desc="Epoch")
         total_step = len(data_loader)
-        # training_loss, training_step = 0, 0
-        acc = 0.
-        max_acc = 0.
         self.model.train()
-        best_eval_acc = 0
         for epoch in train_iterator:
             if update_epoch is not None:
                 update_epoch(epoch)
@@ -325,7 +319,6 @@ if __name__ == "__main__":
                                   empty_label_idx=args.empty_label_idx, tree_path=args.tree_path, 
                                   enable_shortcut=args.enable_shortcut,
                                   cache_dir=args.cache_dir)
-    # TODO 1: update model factory 
 
     model = create_classification_model(args.model_name, dataset.model_type, args.config_path, \
                                         len(dataset.labels), args.pretrain_dir)
@@ -427,7 +420,7 @@ if __name__ == "__main__":
                                            'dev', args.max_batch_len, args.max_batch_size, 
                                            sampler="sequential", noise_corpus=args.noise_corpus, 
                                            empty_label_idx=args.empty_label_idx, tree_path=args.tree_path, enable_shortcut=args.enable_shortcut,
-                                           cache_dir=args.cache_dir) # concat_pair for r2d2_iter
+                                           cache_dir=args.cache_dir)
         eval_collator = GlueCollator(eval_dataset.model_type, mask_id, sep_id, mask_rate=0.0, mask_epochs=0)
         if args.collator_fn == 'seperate':
             eval_collate_fn = eval_collator.mlm_collator
@@ -440,11 +433,7 @@ if __name__ == "__main__":
             collate_fn=eval_collate_fn,
         )
         evaluator = None
-        # evaluator = GlueEvaluater(
-        #     model,
-        #     device=device,
-        #     tokenizer=tokenizer,
-        #     logger=logger)
+
     else:
         eval_dataloader = None
         evaluator = None
@@ -460,9 +449,6 @@ if __name__ == "__main__":
     )
     
     metric = None
-    # if args.task_type=="cola":
-    # from datasets import load_metric
-    # metric = load_metric("glue", TASK_MAPPING[args.task_type]) # None
     metric = evaluate.load('glue', TASK_MAPPING[args.task_type])
 
     trainer.train(
