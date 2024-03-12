@@ -1,0 +1,12 @@
+    torchrun --standalone --nnodes=1 --nproc_per_node=$1 trainer/r2d2+_glue_trainer.py \
+    --max_grad_norm 1.0 --lr 5e-5 --parser_lr 1e-2 \
+    --config_path data/fast_r2d2_plus/config.json  \
+    --vocab_dir data/en_config \
+    --task_type mnli --glue_dir data/glue_debug/MNLI --max_batch_len 6144 \
+    --max_batch_size 4 --output_dir data/fast_r2d2_plus/out \
+    --epochs 10  \
+    --log_step 10 --eval_step 10 \
+    --model_name fastr2d2+_io \
+    --enable_epoch_eval \
+    --add_mask_noise \
+    --pretrain_dir data/fast_r2d2_plus/pretrain

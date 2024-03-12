@@ -1,0 +1,12 @@
+    python experiments/span_train.py \
+    -data_path data/ontonotes/ner \
+    -config_path data/transformer${1}_30/config.json \
+    -pretrain_dir data/transformer${1}_30 \
+    -task nel -model_type transformer \
+    -batch_size 64 \
+    -eval_batch_size 4 \
+    -criteria ce \
+    -pool_methods max \
+    -fine_tune \
+    -use_argmax \
+    -slurm_comment maxt$1

@@ -1,0 +1,11 @@
+    python experiments/span_train.py \
+    -data_path data/ontonotes/coref \
+    -config_path data/transformer${1}_30/config.json \
+    -pretrain_dir data/transformer${1}_30 \
+    -task coref -model_type transformer \
+    -eval_batch_size 8 \
+    -criteria ce \
+    -pool_methods max \
+    -fine_tune \
+    -use_argmax \
+    -slurm_comment maxt$1
