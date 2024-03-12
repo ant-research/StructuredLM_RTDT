@@ -1,6 +1,6 @@
     python experiments/span_train.py \
     -data_path data/ontonotes/coref \
-    -config_path data/r2d2+_share_30/config.json \
+    -config_path data/en_config/r2d2+_config.json \
     -pretrain_dir data/r2d2+_share_30 \
     -task coref -model_type r2d2 \
     -share \
