@@ -19,7 +19,11 @@ We explore the interpretability of the structured encoder and find that the indu
 
 "[Augmenting Transformers with Recursively Composed Multi-Grained Representations](https://openreview.net/forum?id=u859gX7ADC)". (ICLR 2024) current branch.
 
-We reduce the space complexity of the deep inside-outside encoder from cubic to linear and further reduce the parallel time complexity to approximately log N. Meanwhile, we find that joint pre-training of Transformers and composition models can enhance a variety of NLP downstream tasks.
+We reduce the space complexity of the deep inside-outside algorithm from cubic to linear and further reduce the parallel time complexity to approximately log N thanks to the new pruning algorithm proposed in this paper. Furthermore, we find that joint pre-training of Transformers and composition models can enhance a variety of NLP downstream tasks.
+
+"[Generative Pretrained Structured Transformers: Unsupervised Syntactic Language Models at Scale](http://arxiv.org/abs/2403.08293)". (preprint)
+
+We propose GPST, a syntactic language model which could be pre-trained on raw text efficiently without any human-annotated trees. When GPST and GPT-2 are both pre-trained on OpenWebText from scratch, GPST can outperform GPT-2 on various downstream tasks. Moreover, it significantly surpasses previous methods on generative grammar induction tasks, exhibiting a high degree of consistency with human syntax. The code will be released soon.
 
 ## Setup
 
