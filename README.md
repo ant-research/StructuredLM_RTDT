@@ -6,11 +6,11 @@ This library aims to construct syntactic compositional representations for text 
 ## Milestones
 "[R2D2: Recursive Transformer based on Differentiable Tree for Interpretable Hierarchical Language Modeling](https://aclanthology.org/2021.acl-long.379/)" (ACL2021), [R2D2](https://github.com/alipay/StructuredLM_RTDT/tree/r2d2)
 
-Proposing an unsupervised syntactic language model of linear complexity, based on a neural inside algorithm with heuristic pruning.
+Proposing an unsupervised structured encoder able to compose low-level constituents into high-level constituents without gold trees. The learned trees are highly consistent with human-annotated ones. The backbone of the encoder is a neural inside algorithm with heuristic pruning, thus the time and space complexity are both in linear.
 
 "[Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation](https://arxiv.org/abs/2203.00281)". (EMNLP2022),[Fast_r2d2](https://github.com/alipay/StructuredLM_RTDT/tree/fast-R2D2)
 
-Improve the heuristic pruning module in R2D2 to model-based pruning.
+Improve the heuristic pruning module used in R2D2 to model-based pruning.
 
 
 "[A Multi-Grained Self-Interpretable Symbolic-Neural Model For Single/Multi-Labeled Text Classification](https://openreview.net/forum?id=MLJ5TF5FtXH)".(ICLR 2023), [self-interpretable classification](https://github.com/ant-research/StructuredLM_RTDT/tree/self_interpretable_classification)
