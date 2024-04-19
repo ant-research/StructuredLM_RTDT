@@ -38,12 +38,12 @@ class TensorCache:
         self.caches = [None] * self._cache_num
         self.dims = dims
         self.device = device
-        dtype = torch.float16 if torch.is_autocast_enabled() else torch.float
+
         for i, cache_type in enumerate(cache_types):
             if cache_type == CacheType.NORMAL:
-                self.caches[i] = torch.full((self.total_block_size, dims[i]), 0.0, dtype=dtype, device=device)
+                self.caches[i] = torch.full((self.total_block_size, dims[i]), 0.0, dtype=torch.float32, device=device)
             elif cache_type == CacheType.DETACH:
-                self.caches[i] = torch.full((self.total_block_size * 2, dims[i]), 0.0, dtype=dtype, device=device)
+                self.caches[i] = torch.full((self.total_block_size * 2, dims[i]), 0.0, dtype=torch.float32, device=device)
 
     @property
     def capacity(self):
@@ -112,7 +112,8 @@ class TensorCache:
             scatter_indices = indices
         else:
             scatter_indices = torch.tensor(indices, dtype=torch.long, device=self.device)
-        
+            
+        detach_scatter_indices = scatter_indices + self.total_block_size
         for cache_id, value in zip(cache_ids, values):
             tensor_block = self.caches[cache_id]
             dim = value.shape[-1]
@@ -120,3 +121,6 @@ class TensorCache:
             if torch.is_autocast_enabled() and value.dtype is not torch.float16:
                 value = value.half()
             tensor_block.scatter_(dim=0, index=scatter_indices_, src=value)
+            if self.cache_types[cache_id] == CacheType.DETACH:
+                detach_scatter_indices_ = detach_scatter_indices.unsqueeze(1).repeat(1, dim)
+                tensor_block.scatter_(dim=0, index=detach_scatter_indices_, src=value.detach())
