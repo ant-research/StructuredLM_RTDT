@@ -17,11 +17,11 @@ Improve the heuristic pruning module used in R2D2 to model-based pruning.
 
 We explore the interpretability of the structured encoder and find that the induced alignment between labels and spans is highly consistent with human rationality.
 
-"[Augmenting Transformers with Recursively Composed Multi-Grained Representations](https://openreview.net/forum?id=u859gX7ADC)". (ICLR 2024) current branch.
+"[Augmenting Transformers with Recursively Composed Multi-Grained Representations](https://openreview.net/forum?id=u859gX7ADC)". (ICLR 2024) [ReCAT](https://github.com/ant-research/StructuredLM_RTDT/tree/ReCAT)
 
 We reduce the space complexity of the deep inside-outside algorithm from cubic to linear and further reduce the parallel time complexity to approximately log N thanks to the new pruning algorithm proposed in this paper. Furthermore, we find that joint pre-training of Transformers and composition models can enhance a variety of NLP downstream tasks.
 
-"[Generative Pretrained Structured Transformers: Unsupervised Syntactic Language Models at Scale](http://arxiv.org/abs/2403.08293)". (preprint)
+"[Generative Pretrained Structured Transformers: Unsupervised Syntactic Language Models at Scale](http://arxiv.org/abs/2403.08293)". (ACL2024)  (Code will be released in two weeks.)
 
 We propose GPST, a syntactic language model which could be pre-trained on raw text efficiently without any human-annotated trees. When GPST and GPT-2 are both pre-trained on OpenWebText from scratch, GPST can outperform GPT-2 on various downstream tasks. Moreover, it significantly surpasses previous methods on generative grammar induction tasks, exhibiting a high degree of consistency with human syntax. The code will be released soon.
 
