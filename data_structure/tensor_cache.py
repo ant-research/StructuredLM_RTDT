@@ -121,6 +121,3 @@ class TensorCache:
             if torch.is_autocast_enabled() and value.dtype is not torch.float16:
                 value = value.half()
             tensor_block.scatter_(dim=0, index=scatter_indices_, src=value)
-            if self.cache_types[cache_id] == CacheType.DETACH:
-                detach_scatter_indices_ = detach_scatter_indices.unsqueeze(1).repeat(1, dim)
-                tensor_block.scatter_(dim=0, index=detach_scatter_indices_, src=value.detach())
