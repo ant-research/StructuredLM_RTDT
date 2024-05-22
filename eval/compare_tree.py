@@ -145,6 +145,7 @@ def main(args):
             # if len(sent1) > args.length_cutoff or len(sent1) == 1:
             #     continue
             # gold_span1, binary_actions1, nonbinary_actions1 = get_nonbinary_spans(action1)
+
             tree2 = tree2.strip()
             action2 = get_actions(tree2)
             tags2, sent2, sent_lower2 = get_tags_tokens_lowercase(tree2)

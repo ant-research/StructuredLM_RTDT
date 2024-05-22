@@ -1,5 +1,6 @@
 import unicodedata
 import numpy as np
+import math
 
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
@@ -114,7 +115,7 @@ def _find_point_in_spans(point, start_index, spans):
     return index
 
 
-def _align_spans(original_spans, token_spans):
+def align_spans(original_spans, token_spans):
     """
     
     Map each word to its subtokens.
@@ -178,3 +179,6 @@ def padding(arr_list, pad_val=0):
     for arr in arr_list:
         arr.extend([pad_val] * (max_len - len(arr)))
     return arr_list
+
+def gpt_token(gpt_token):
+    return gpt_token.replace('Ġ', '')

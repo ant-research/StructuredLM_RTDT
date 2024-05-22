@@ -21,47 +21,13 @@ We explore the interpretability of the structured encoder and find that the indu
 
 We reduce the space complexity of the deep inside-outside algorithm from cubic to linear and further reduce the parallel time complexity to approximately log N thanks to the new pruning algorithm proposed in this paper. Furthermore, we find that joint pre-training of Transformers and composition models can enhance a variety of NLP downstream tasks.
 
-"[Generative Pretrained Structured Transformers: Unsupervised Syntactic Language Models at Scale](http://arxiv.org/abs/2403.08293)". (ACL2024)  (Code will be released in two weeks.)
+"[Generative Pretrained Structured Transformers: Unsupervised Syntactic Language Models at Scale](http://arxiv.org/abs/2403.08293)". (ACL2024)  (current main branch)
 
-We propose GPST, a syntactic language model which could be pre-trained on raw text efficiently without any human-annotated trees. When GPST and GPT-2 are both pre-trained on OpenWebText from scratch, GPST can outperform GPT-2 on various downstream tasks. Moreover, it significantly surpasses previous methods on generative grammar induction tasks, exhibiting a high degree of consistency with human syntax. The code will be released soon.
+We propose GPST, a syntactic language model which could be pre-trained on raw text efficiently without any human-annotated trees. When GPST and GPT-2 are both pre-trained on OpenWebText from scratch, GPST can outperform GPT-2 on various downstream tasks. Moreover, it significantly surpasses previous methods on generative grammar induction tasks, exhibiting a high degree of consistency with human syntax.
 
-## Setup
 
-Compile C++ codes.
-
-python setup.py build_ext --inplace
-
-## Dataset preprocessing
-Dataset: WikiText-103
-
-Before pre-training, we preprocess corpus by spliting raw texts to sentences, tokenizing them, and converting them into numpy format.
-
-Split texts into sentences
-
-python utils/data\_processor.py --corput\_path PATH\_TO\_YOUR\_CORPUS --task\_type split --output\_path PATH\_TO\_SPLIT_CORPUS
-
-Tokenize raw texts and convert them into numpy format.
-
-python utils/dataset\_builder.py
-
-## Pre-training
-cd trainer
-
-torchrun --standalone --nnodes=1 --nproc\_per\_node=1 r2d2+\_mlm\_pretrain.py 
-    --config\_path ../data/en_config/r2d2+\_config.json 
-    --model\_type cio --parser_lr 1e-3 
-    --corpus\_path ../../corpus/PATH\_TO\_PREPROCESSED\_CORPUS 
-    --input\_type bin --vocab\_path ../data/en\_config 
-    --epochs 10 --output\_dir ../PRETRAIN\_MODEL\_SAVE\_DIR 
-    --min\_len 2 --log\_step 10 --batch\_size 64 --max\_batch\_len 512 
-    --save\_step 2000 --cache_dir ../pretrain\_cache 
-    --coeff\_decline 0.00 --ascending 
-
-## Downstream tasks
-
-We have conducted downstream experiments on span-level tasks using Ontonotes 5.0, sentence-level tasks using GLUE , and structure analysis tasks using PTB. Please refer to `scripts/` directory for more details.
-
-For scripts under `scripts/span_tasks/transformer`, the argument passed inidicates the number of span attention layers in Transformer where we experimented with 6 and 9.
+# README
+The README will be gradually improved over the next two weeks.
 
 ## Contact
 

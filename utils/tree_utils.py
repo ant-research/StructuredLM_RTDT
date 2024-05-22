@@ -1,4 +1,5 @@
 from collections import deque
+from functools import total_ordering
 from typing import List
 import numpy as np
 from data_structure.r2d2_tree import PyNode
@@ -31,6 +32,8 @@ def get_cache_size(merge_order: List[PyNode], seq_len : int, window_size : int):
 
 
 def get_tree_from_merge_trajectory(merge_trajectory: np.array, seq_len, tokens=None, keep_merge_order=False):
+    if seq_len == 1:
+        return PyNode(None, None, 0, 0, -1)
     spans_for_splits = [[PyNode(None, None, i, i, -1), PyNode(None, None, i + 1, i + 1, -1)]
                         for i in range(seq_len - 1)]
     latest_span = spans_for_splits[0][0] if seq_len > 1 else None
@@ -442,18 +445,15 @@ def flatten_trees(roots):
         to_visit = deque()
         to_visit.append(root)
         flatten_nodes = []
-        current_id = 0
         while len(to_visit) > 0:
-            current = to_visit.pop()
-            current.flatten_id = current_id
+            current = to_visit.pop(-1)
             flatten_nodes.append(current)
-            current_id += 1
             if current.left is not None and current.right is not None:
                 to_visit.append(current.right)
                 to_visit.append(current.left)
         flatten_nodes_batch.append(flatten_nodes)
     return flatten_nodes_batch
-    
+
 def find_span_in_tree(root, st, ed):
     """
 

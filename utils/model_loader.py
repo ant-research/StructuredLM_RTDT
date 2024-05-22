@@ -67,9 +67,3 @@ def create_r2d2_with_bert_embedding(r2d2_config_path, bert_model, output_path):
     bert_state_dict = torch.load(bert_model)
     model.embedding.weight.data = bert_state_dict['bert.embeddings.word_embeddings.weight'].data
     torch.save(model.state_dict(), output_path)
-
-
-if __name__ == '__main__':
-    create_r2d2_with_bert_embedding('data/en_config/fast_r2d2.json', \
-                                    'data/bert-base-uncased/pytorch_model.bin',
-                                    'data/r2d2_bert_embedding/model.bin')

@@ -1,7 +1,3 @@
-# coding=utf-8
-# Copyright (c) 2021 Ant Group
-# Author: Xiang Hu
-
 from torch import nn
 import torch
 
@@ -13,8 +9,6 @@ class R2D2Base(nn.Module):
         self.input_dim = config.hidden_size
         self.hidden_dim = config.intermediate_size
         self.window_size = config.window_size
-        self.embedding = nn.Embedding(self.vocab_size, self.input_dim)
-        self.classifier = nn.Linear(self.input_dim, config.vocab_size)
 
         self.tie_decoder = getattr(config, 'tie_decoder', True)
         self.cls_token_id = config.cls_token_id
@@ -24,15 +18,6 @@ class R2D2Base(nn.Module):
         self.eos_token_id = config.eos_token_id
         self.nsp_token_id = config.nsp_token_id
         self.sum_token_id = config.sum_token_id
-
-        self._initialize_weights()
-        self._tie_weights()
-
-    def _tie_weights(self):
-        self.classifier.weight = self.embedding.weight
-
-    def _initialize_weights(self):
-        self.embedding.weight.data.normal_(mean=0, std=0.02)
 
     @property
     def device(self):

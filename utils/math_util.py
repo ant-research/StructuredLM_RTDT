@@ -1,6 +1,3 @@
-# coding=utf-8
-# Copyright (c) 2021 Ant Group
-
 import numpy as np
 import torch
 import torch.nn.functional as F

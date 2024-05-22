@@ -1,7 +1,6 @@
 # coding=utf-8
-# Copyright (c) 2023 Ant Group
+# Copyright (c) 2024 Ant Group
 # Author: Xiang Hu
-
 from enum import Enum
 import torch
 
@@ -38,7 +37,7 @@ class TensorCache:
         self.caches = [None] * self._cache_num
         self.dims = dims
         self.device = device
-
+        # dtype = torch.float16 if torch.is_autocast_enabled() else torch.float
         for i, cache_type in enumerate(cache_types):
             if cache_type == CacheType.NORMAL:
                 self.caches[i] = torch.full((self.total_block_size, dims[i]), 0.0, dtype=torch.float32, device=device)
@@ -112,12 +111,11 @@ class TensorCache:
             scatter_indices = indices
         else:
             scatter_indices = torch.tensor(indices, dtype=torch.long, device=self.device)
-            
-        detach_scatter_indices = scatter_indices + self.total_block_size
+        
         for cache_id, value in zip(cache_ids, values):
             tensor_block = self.caches[cache_id]
             dim = value.shape[-1]
             scatter_indices_ = scatter_indices.unsqueeze(1).repeat(1, dim)
-            if torch.is_autocast_enabled() and value.dtype is not torch.float16:
-                value = value.half()
+            if value.dtype != tensor_block.dtype:
+                value = value.to(tensor_block.dtype)
             tensor_block.scatter_(dim=0, index=scatter_indices_, src=value)
