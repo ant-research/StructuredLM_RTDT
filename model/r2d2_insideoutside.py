@@ -147,7 +147,7 @@ class InsideOutsideModule(R2D2Base):
             # log_p_ijk: (batch_size, group_size)
             # print(scores_ijk.shape)
             # print(scores_ij_sum.shape)
-            scores_ijk_sum = scores_ijk + scores_ij_sum  # (batch_size, combination_size)
+            scores_ijk_sum = scores_ijk  # (batch_size, combination_size)
 
             # assert not torch.any(torch.isinf(log_p_ij_step))
             if not self.use_gumbel:

@@ -216,8 +216,8 @@ class OutsideEncoder(nn.Module):
             right_score = (parent_const_l * left_child_const).sum(dim=-1) / math.sqrt(self.const_size)
             left_score = left_score.view(batch_size, comb_size)
             right_score = right_score.view(batch_size, comb_size)
-            out_score_ik = left_score + parent_scores + child_scores[:, :, 1]
-            out_score_kj = right_score + parent_scores + child_scores[:, :, 0]
+            out_score_ik = left_score
+            out_score_kj = right_score
             outside_scores = torch.stack([out_score_ik, out_score_kj], dim=2)
         # inputs: (?, 2, dim)
         out_e_ij = self.norm(inputs.sum(dim=1))
