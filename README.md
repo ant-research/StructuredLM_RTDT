@@ -26,6 +26,11 @@ We reduce the space complexity of the deep inside-outside algorithm from cubic t
 We propose GPST, a syntactic language model which could be pre-trained on raw text efficiently without any human-annotated trees. When GPST and GPT-2 are both pre-trained on OpenWebText from scratch, GPST can outperform GPT-2 on various downstream tasks. Moreover, it significantly surpasses previous methods on generative grammar induction tasks, exhibiting a high degree of consistency with human syntax.
 
 
+#Overview
+Trees learned unsupervisedly
+<img src="images/showcase1.png" width="500">
+<img src="images/showcase2.png" width="500">
+
 # README
 The README will be gradually improved over the next two weeks.
 
