@@ -27,7 +27,8 @@ We propose GPST, a syntactic language model which could be pre-trained on raw te
 
 
 #Overview
-Trees learned unsupervisedly
+Trees learned unsupervisedly by our composition model.
+
 <img src="images/showcase1.png" width="500">
 <img src="images/showcase2.png" width="500">
 
