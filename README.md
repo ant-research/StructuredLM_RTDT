@@ -29,8 +29,11 @@ We propose GPST, a syntactic language model which could be pre-trained on raw te
 # Overview
 Trees learned unsupervisedly
 
-<img src="images/showcase1.png" width="500">
+<img src="images/showcase1.png" width="700">
 <img src="images/showcase2.png" width="500">
+
+Here is an illustration of the syntactic generation process for the sentence "fruit flies like a banana".
+<img src="images/GPST_generation_process.gif" width="800">
 
 # README
 The README will be gradually improved over the next two weeks.
