@@ -32,8 +32,12 @@ Trees learned unsupervisedly
 <img src="images/showcase1.png" width="700">
 <img src="images/showcase2.png" width="500">
 
+## Illustration of GPST generation process
 Here is an illustration of the syntactic generation process for the sentence "fruit flies like a banana".
 <img src="images/GPST_generation_process.gif" width="800">
+
+## Illustration of how the neural inside pass works
+<img src="images/composition_model.gif" width="800">
 
 # README
 The README will be gradually improved over the next two weeks.
