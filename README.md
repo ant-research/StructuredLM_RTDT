@@ -39,6 +39,13 @@ Here is an illustration of the syntactic generation process for the sentence "fr
 ## Illustration of how the neural inside pass works
 <img src="images/composition_model.gif" width="800">
 
+## Illustration of pruned neural inside pass
+To be done
+
+## Illustration of parallel training of GPST
+To be done
+
+
 # README
 
 ## Setup
@@ -146,8 +153,6 @@ Syntactic Generalization test suites preprocessing: `sh scripts/preprocess_sg_da
 To evaluate GPST<sub>medium</sub>: `sh scripts/evaluate_sg_GPST_medium.sh`
 
 To evaluate GPST<sub>small</sub>: `sh scripts/evaluate_sg_GPST_small.sh`
-
-## Contact
 
 ## Contact
 
