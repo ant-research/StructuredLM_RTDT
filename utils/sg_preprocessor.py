@@ -1,4 +1,7 @@
 import json
+import os
+import argparse
+import sys
 
 task_list = ["center_embed", "center_embed_mod", "cleft", "cleft_mod", "fgd_subject", "fgd_object", "fgd_pp", "fgd_embed3", \
     "fgd_embed4", "fgd_hierarchy", "mvrr", "mvrr_mod", "nn_nv_rpl", "npi_orc_any", "npi_orc_ever", "npi_src_any", \
@@ -101,3 +104,17 @@ class sg_testsuite():
             with open(self.output_path, "w") as json_file:
                 json.dump(self.output, json_file, indent=2)
 
+if __name__ == "__main__":
+    cmd = argparse.ArgumentParser("Arguments for sg preprocessor")
+    cmd.add_argument('--tokenizer_config_path', required=True, type=str, help='config for tokenizer')
+    cmd.add_argument('--sg_dir', required=True, type=str, help='directory for sg dataset')
+    cmd.add_argument('--output_dir', required=True, type=str, help='output directory for preprocessed sg dataset')
+
+    args = cmd.parse_args(sys.argv[1:])
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_config_path)
+    
+    for task_name in task_list:
+        json_path = os.path.join(args.sg_dir, f"{task_name}.json")
+        output_path = os.path.join(args.output_dir, f"{task_name}.json")
+        sg_testsuite(task_name, json_path, tokenizer, output_path=output_path)

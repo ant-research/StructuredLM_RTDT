@@ -6,6 +6,8 @@ import codecs
 import tarfile
 from itertools import accumulate
 import re
+import argparse
+import sys
 
 
 def build_dataset(text_path, tokenizer, output_dir, buffer_size = 1024, max_len=-1, tokenize_sent=False, sent_tokenizer=None):
@@ -165,3 +167,24 @@ def print_dataset(index_path, data_path, tokenizer):
     for end in ends:
         print(tokenizer.convert_ids_to_tokens(np_memmap[prev_end : end]))
         prev_end = end
+
+
+if __name__ == '__main__':
+    cmd = argparse.ArgumentParser('Preprocess corpus components')
+    cmd.add_argument('--mode', required=True, choices=['wikitext103', 'openwebtext'], default='wikitext103')
+    cmd.add_argument('--tokenizer_config_path', required=True, type=str, help='config for tokenizer')
+    cmd.add_argument('--raw_corpus_path', required=True, type=str, help='path for raw corpus')
+    cmd.add_argument('--output_path', required=True, type=str, help='path for preprocessed corpus, end with .lazy')
+
+    args = cmd.parse_args(sys.argv[1:])
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_config_path)
+
+    if args.mode == "wikitext103":
+        build_dataset(args.raw_corpus_path, tokenizer, args.output_path, 
+                buffer_size=16384, max_len=-1, tokenize_sent=True)
+    elif args.mode == "openwebtext":
+        build_dataset_from_dir(args.raw_corpus_path, tokenizer, args.output_path, 
+                 buffer_size=16384, max_len=-1, tokenize_sent=True)
+    else:
+        raise Exception('Mode not suppport')

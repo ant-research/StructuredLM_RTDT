@@ -12,6 +12,7 @@ class GenerationMode(Enum):
     TOPK = 0,
     NUCLEUS = 1,
 
+
 def split_past_kv(past_key_values, beam_size):
     split_past_kvs = []
     for kv_layer in past_key_values:
@@ -24,6 +25,144 @@ def split_past_kv(past_key_values, beam_size):
 
         split_past_kvs.append((k, v))
     return split_past_kvs
+
+
+class GPTGenerationUtil:
+    def __init__(self, model, device):
+        self.device = device
+        model.to(device)
+        self.model = model
+        self.embedding_dim = self.model.embedding_dim
+        self.eos_id = self.model.eos_id
+        self.model.eval()
+    
+    @torch.no_grad()
+    def random_sampling(self, prefix_ids, past_kv=None, max_steps=1024, mode=GenerationMode.TOPK, mode_arg=5):
+        # probslist = []
+        prefix_len = prefix_ids.shape[0]
+        model_input = torch.zeros((prefix_len + 1,), dtype=torch.long, device=prefix_ids.device)
+        model_input[0] = self.model.bos_id
+        model_input[1:] = prefix_ids
+
+        result = self.model.gpt(model_input.unsqueeze(0), past_key_values=past_kv, return_dict=True)
+        past_key_values = result.past_key_values
+        
+        current_step = 0
+        probs = F.softmax(result.logits[:, -1, :], dim=-1)
+        # probslist.append(probs)
+        return_ids = []
+
+        for current_step in range(max_steps):
+            if mode == GenerationMode.TOPK:
+                values, indices = probs.topk(mode_arg, dim=1)  # (1, K)
+                prob = values.flatten()
+                sampled_idx = torch.multinomial(prob, num_samples=1, replacement=False) # (1)
+                next_token_id_t = indices[:, sampled_idx[0]]
+                # print("next_token_id_t: ", next_token_id_t.shape)
+                next_token_id = next_token_id_t.cpu().data.numpy()[0]
+            elif mode == GenerationMode.NUCLEUS:
+                sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+                cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+                sorted_indices_to_remove = cumulative_probs > mode_arg
+                # ensure at least one index is selected
+                sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+                sorted_indices_to_remove[..., 0] = 0
+                indices_to_remove = sorted_indices_to_remove.scatter(dim=-1, index=sorted_indices, src=sorted_indices_to_remove)
+                probs[indices_to_remove] = 0
+                prob = probs.flatten()
+                next_token_id_t = torch.multinomial(prob, num_samples=1, replacement=False) # (1)
+                # print("next_token_id_t: ", next_token_id_t.shape)
+                next_token_id = next_token_id_t.cpu().data.numpy()[0]
+            else:
+                raise Exception('unknow mode')
+            
+            # if next_token_id_t == torch.tensor([1429]):
+            #     return past_key_values
+            result = self.model.gpt(next_token_id_t, past_key_values=past_key_values, return_dict=True)
+            # print("logits_shape: ", result.logits.shape)     
+            probs = F.softmax(result.logits, dim=-1)
+            # probslist.append(probs)
+            past_key_values = result.past_key_values
+            
+            if next_token_id == self.eos_id:
+                return return_ids
+            else:
+                return_ids.append(next_token_id)
+        return return_ids
+
+    @torch.no_grad()
+    def batch_random_sampling(self, prefix_ids, prefix_masks, past_kv=None, max_steps=1024, mode=GenerationMode.TOPK, mode_arg=5):
+        # probslist = []
+        batch_size, max_prefix_len = prefix_ids.shape
+        prefix_lens = (prefix_masks != 0).sum(dim=1)
+        model_input = torch.zeros((batch_size, max_prefix_len + 1), dtype=torch.long, device=prefix_ids.device)
+        model_input[:, 0] = self.model.bos_id
+        model_input[:, 1:] = prefix_ids
+
+        model_input = torch.where(model_input != -100, model_input, 0)
+        attention_mask = torch.where(prefix_masks != 0, 1, 0)
+
+        aux = torch.ones((batch_size, 1), device=prefix_ids.device)
+        attention_mask = torch.concat((aux, attention_mask), dim=1)
+        aux2 = torch.ones((batch_size, max_steps), device=prefix_ids.device)
+        attention_mask = torch.concat((attention_mask, aux2), dim=1).to(dtype=float)
+
+        result = self.model.gpt(model_input, past_key_values=past_kv, return_dict=True)
+        past_key_values = result.past_key_values
+        # print("past_key_values: ", len(past_key_values))
+        logits = result.logits[torch.arange(batch_size), prefix_lens, :]
+        # print("logits: ", logits.shape)
+        # print(logits[0] == result.logits[0][prefix_lens[0]], logits[1] == result.logits[1][prefix_lens[1]])
+        probs = F.softmax(logits, dim=-1)
+        # probslist.append(probs)
+        
+        current_step = 0
+        # probs = F.softmax(result.logits[:, -1, :], dim=-1)
+        return_ids = torch.zeros((batch_size, max_steps), dtype=torch.long, device=prefix_ids.device)
+
+        for current_step in range(max_steps):
+            if mode == GenerationMode.TOPK:
+                values, indices = probs.topk(mode_arg, dim=1)  # (N, K)
+                # print("values: ", values)
+                sampled_idx = torch.multinomial(values, num_samples=1, replacement=False) # (N, 1)
+                # print("sampled_idx: ", sampled_idx)
+                next_token_id_t = indices[torch.arange(batch_size), sampled_idx.squeeze(1)]
+                # print("next_token_id_t: ", next_token_id_t)
+                next_token_id = next_token_id_t.cpu().data.numpy()
+            elif mode == GenerationMode.NUCLEUS:
+                sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+                cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+                sorted_indices_to_remove = cumulative_probs > mode_arg
+                # ensure at least one index is selected
+                sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+                sorted_indices_to_remove[..., 0] = 0
+                # print("sorted_indices_to_remove:", sorted_indices_to_remove.shape)
+                indices_to_remove = sorted_indices_to_remove.scatter(dim=-1, index=sorted_indices, src=sorted_indices_to_remove)
+                # print("indices_to_remove: ", indices_to_remove.shape, indices_to_remove)
+                probs[indices_to_remove] = 0
+                next_token_id_t = torch.multinomial(probs, num_samples=1, replacement=False) # (N, 1)
+                next_token_id_t = next_token_id_t.squeeze(1)
+                # print("next_token_id_t: ", next_token_id_t.shape, next_token_id_t)
+                next_token_id = next_token_id_t.cpu().data.numpy()
+            else:
+                raise Exception('unknow mode')
+
+            position_ids = attention_mask[:, :max_prefix_len+1+current_step+1].long().cumsum(-1) - 1
+            # print("position_ids: ", position_ids)
+            # position_ids.masked_fill_(attention_mask[:, :max_prefix_len+1+current_step+1] == 1, 1)
+            # print("position_ids2: ", position_ids)
+            position_ids = position_ids[:, -1].unsqueeze(-1)
+            # print("model_input: ", next_token_id_t.unsqueeze(1))
+            # print("position_ids: ", position_ids.shape, position_ids)
+            # print("attention_mask: ", attention_mask[:, :max_prefix_len+1+current_step+1].shape, attention_mask[:, :max_prefix_len+1+current_step+1])
+            result = self.model.gpt(next_token_id_t.unsqueeze(1), past_key_values=past_key_values, position_ids=position_ids, attention_mask=attention_mask[:, :max_prefix_len+1+current_step+1], return_dict=True)
+            probs = F.softmax(result.logits[:, 0, :], dim=-1)
+            # probslist.append(probs)
+            past_key_values = result.past_key_values
+            
+            return_ids[:, current_step] = next_token_id_t
+        return return_ids
+
 
 class GenerationUtil:
     def __init__(self, model, device, config, ext_vocab=None, span_tokenizer=None):
@@ -40,6 +179,7 @@ class GenerationUtil:
         self.eos_id = config.eos_token_id
         self.ext_vocab = ext_vocab
         self.embedding_dim = model.embedding_dim
+        self.temperature = temperature
         self.model.eval()
 
     def tree_enc(self, src, span_emb=None):
@@ -86,7 +226,8 @@ class GenerationUtil:
                              masks=masks,
                              span_ids=span_indices,
                              external_vocab_ids=external_ids,
-                             past_key_values=past_kv)
+                             past_key_values=past_kv,
+                             temperature=self.temperature)
 
         past_action_kvs, past_token_kvs = outputs.past_kv
         action_kv_len = past_action_kvs[0][0].shape[2]
@@ -322,8 +463,9 @@ class GenerationUtil:
                              masks=masks,
                              span_ids=span_indices,
                              external_vocab_ids=external_ids,
-                             past_key_values=past_kv)
-
+                             past_key_values=past_kv,
+                             temperature=self.temperature)
+                             
         encoding_beams = torch.full((1, 2 * max_steps, self.hidden_size), 
                                      fill_value=0.0, device=self.device)
         
@@ -354,11 +496,10 @@ class GenerationUtil:
 
             action_logits = self.model.action_mlp(action_results.last_hidden_state)  # (1, 1, 2)
             token_logits = self.model.classifier(self.model.dense(token_results.last_hidden_state))
-
             return action_logits, token_logits, action_results.past_key_values, token_results.past_key_values
 
 
-        # get the last action_logits and token_logits of r2d2-gen
+        # get the last action_logits and token_logits of r2d2-gen-fast
         current_cache_offset = 0
 
         # TODO: 根据生成token的数量更新current_step
@@ -397,8 +538,7 @@ class GenerationUtil:
             token_offsets_batch.append(token_offsets)
             top_indices_batch = torch.tensor(top_indices_batch).to(device=self.device, non_blocking=True)  # (1, 2)
             if self.ext_vocab is not None:
-                ext_vocab_ids_batch = torch.tensor(ext_vocab_ids_batch, device=self.device)
-            # (1, beam_size, 2, dim)
+                ext_vocab_ids_batch = torch.tensor(ext_vocab_ids_batch, device=self.device)  # (1, beam_size, 2, dim)
             
             score_mask_batch = torch.tensor(score_mask_batch, dtype=torch.bool).to(device=self.device, non_blocking=True)  # (N, B, 2)
             # next token offset
@@ -416,11 +556,12 @@ class GenerationUtil:
 
             if mode == GenerationMode.TOPK:
                 values, indices = action_scores.topk(mode_arg, dim=2)  # (1, 1, K)
+                # print("indices: ", indices)
                 prob = values.flatten().exp()
                 sampled_idx = torch.multinomial(prob, num_samples=1, replacement=False) # (1)
                 next_token_id_t = indices[:, :, sampled_idx[0]]
                 next_token_id = next_token_id_t.cpu().data.numpy()[0][0]
-            elif mode == GenerationModel.NUCLEUS:
+            elif mode == GenerationMode.NUCLEUS:
                 probs = action_scores.exp()
                 sorted_probs, sorted_indices = torch.sort(probs, descending=True)
                 cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
@@ -488,7 +629,6 @@ class GenerationUtil:
         
         # TODO: return the best state
         return state
-
 
     @torch.no_grad()
     def beam_gen(self, prefix_ids, past_kv=None, beam_size=10, max_steps=1024):

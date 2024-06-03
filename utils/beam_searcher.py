@@ -17,6 +17,7 @@ class R2D2GenFastBeamSearcher:
         self.gpt_config = config
         self.beam_size = beam_size
         # self.layer_num = config.n_layer
+        self.eos_id = config.eos_token_id
         self.action_layer_num = config.action_layer_num
         self.generation_layer_num = config.n_layer - config.action_layer_num
         self.head_num = config.n_head
@@ -36,19 +37,19 @@ class R2D2GenFastBeamSearcher:
             assert torch.all(token_masks.sum(dim=1) == position_ids + 1), f'{token_masks.sum(dim=1)} / {position_ids + 1}'
             # print(action_kv[0][0][0, 0, :5, :5])
             # print(action_masks)
-            for k, v in action_kv:
-                # k (?, n_head, L, n_dim)
-                assert (k * (1.0 - action_masks[:, :-1].float()).unsqueeze(1).unsqueeze(-1)).sum() == 0
-                assert (v * (1.0 - action_masks[:, :-1].float()).unsqueeze(1).unsqueeze(-1)).sum() == 0
-                assert torch.all((k.sum(dim=-1).sum(dim=1) != 0) == action_masks[:, :-1]), f'{k.sum(dim=-1).sum(dim=1) != 0} vs {action_masks[:, :-1]}'
-                assert torch.all((v.sum(dim=-1).sum(dim=1) != 0) == action_masks[:, :-1]), f'{v.sum(dim=-1).sum(dim=1) != 0} vs {action_masks[:, :-1]}'
+            # for k, v in action_kv:
+            #     # k (?, n_head, L, n_dim)
+            #     assert (k * (1.0 - action_masks[:, :-1].float()).unsqueeze(1).unsqueeze(-1)).sum() == 0
+            #     assert (v * (1.0 - action_masks[:, :-1].float()).unsqueeze(1).unsqueeze(-1)).sum() == 0
+            #     assert torch.all((k.sum(dim=-1).sum(dim=1) != 0) == action_masks[:, :-1]), f'{k.sum(dim=-1).sum(dim=1) != 0} vs {action_masks[:, :-1]}'
+            #     assert torch.all((v.sum(dim=-1).sum(dim=1) != 0) == action_masks[:, :-1]), f'{v.sum(dim=-1).sum(dim=1) != 0} vs {action_masks[:, :-1]}'
 
-            for k, v in token_kv:
-                # k (?, n_head, L, n_dim)
-                assert (k * (1.0 - token_masks[:, :-1].float()).unsqueeze(1).unsqueeze(-1)).sum() == 0
-                assert (v * (1.0 - token_masks[:, :-1].float()).unsqueeze(1).unsqueeze(-1)).sum() == 0
-                assert torch.all((k.sum(dim=-1).sum(dim=1) != 0) == token_masks[:, :-1]), f'{k.sum(dim=-1).sum(dim=1) != 0} vs {token_masks[:, :-1]}'
-                assert torch.all((v.sum(dim=-1).sum(dim=1) != 0) == token_masks[:, :-1]), f'{v.sum(dim=-1).sum(dim=1) != 0} vs {token_masks[:, :-1]}'
+            # for k, v in token_kv:
+            #     # k (?, n_head, L, n_dim)
+            #     assert (k * (1.0 - token_masks[:, :-1].float()).unsqueeze(1).unsqueeze(-1)).sum() == 0
+            #     assert (v * (1.0 - token_masks[:, :-1].float()).unsqueeze(1).unsqueeze(-1)).sum() == 0
+            #     assert torch.all((k.sum(dim=-1).sum(dim=1) != 0) == token_masks[:, :-1]), f'{k.sum(dim=-1).sum(dim=1) != 0} vs {token_masks[:, :-1]}'
+            #     assert torch.all((v.sum(dim=-1).sum(dim=1) != 0) == token_masks[:, :-1]), f'{v.sum(dim=-1).sum(dim=1) != 0} vs {token_masks[:, :-1]}'
             action_result = self.model.action_layers(inputs_embeds=gpt_input.unsqueeze(1), position_ids=position_ids, 
                                                      past_key_values=action_kv, attention_mask=action_masks)
             token_result = self.model.generation_layers(inputs_embeds=action_result.last_hidden_state, 
@@ -77,7 +78,6 @@ class R2D2GenFastBeamSearcher:
         token_logits = self.model.classifier(self.model.dense(token_result.last_hidden_state))
         return action_logits, token_logits, action_result.past_key_values, token_result.past_key_values
         
-
     def next_actions(self, action_logits, token_logits, active_states, sync_steps, input_ids=None, atom_spans=None):
         # action_logits: (?, 1, 2), token_logits(?, 1, vocab_size)
         action_logits = action_logits.squeeze(1)
@@ -196,13 +196,22 @@ class R2D2GenFastBeamSearcher:
                     return False
         return True
 
-    def update_sync_steps(self, states_batch, sync_steps):
+    def update_sync_steps(self, states_batch, sync_steps, marginal_logp=None):
         for batch_i, states in enumerate(states_batch):
             all_pass = True
             for state in states:
                 if state.token_offset == sync_steps[batch_i]:
                     all_pass = False
             if all_pass:
+                
+                if marginal_logp != None:
+                    log_p = np.array([state.score for state in states])
+                    log_p_torch = torch.from_numpy(log_p).to(device=self.device)
+                    marginal_logp[batch_i][sync_steps[batch_i]] = log_p_torch.logsumexp(dim=-1)
+                    # print("token_offset: ", [state.token_offset for state in states])
+                    # print("sync_steps: ", sync_steps)
+                    # print("marginal_logp: ", marginal_logp)
+
                 if self.sampling:
                     # randomly select one
                     # log_p_mean = np.array([state.score / (sync_steps[batch_i] + 1) for state in states])
@@ -213,7 +222,7 @@ class R2D2GenFastBeamSearcher:
                     states[selected_idx[0]].score = 0
                     states_batch[batch_i] = [states[selected_idx[0]]]
                 sync_steps[batch_i] += 1
-        return sync_steps
+        return sync_steps, marginal_logp
 
     @torch.no_grad()
     def beam_search(self, 
@@ -226,7 +235,8 @@ class R2D2GenFastBeamSearcher:
                     max_steps=100, 
                     target_ids=None, 
                     target_masks=None, 
-                    atom_spans=None):
+                    atom_spans=None,
+                    tag=None):
         # input_ids: (N, seq_len)
         assert chunk_input_ids is not None or target_ids is not None
         assert chunk_input_ids is None or target_ids is None
@@ -240,7 +250,9 @@ class R2D2GenFastBeamSearcher:
             N = chunk_input_ids.shape[0]
             seq_lens_np = [max_steps] * N
 
-
+        marginal_logp = None
+        if tag != None:
+            marginal_logp = torch.zeros(N, max_steps, device=self.device).fill_(float('-inf')) # (N, L)
 
         states_batch = []
         if chunk_input_ids is not None:
@@ -279,6 +291,7 @@ class R2D2GenFastBeamSearcher:
             init_state.total_len = seq_lens_np[batch_i]
             states_batch.append([init_state])
 
+
         sync_steps = [0] * N
         while True:
             candidate_states = self.next_actions(action_logits, token_logits, states_batch, sync_steps, target_ids, atom_spans)
@@ -294,11 +307,26 @@ class R2D2GenFastBeamSearcher:
             beam_context.update(states_batch, sync_steps, reduce_repr, last_action_kv, last_token_kv)
 
             # for those beams all synchronized on token, pass next token to gpt
-            sync_steps = self.update_sync_steps(states_batch, sync_steps)
-                        
+            if tag != None:
+                sync_steps, marginal_logp = self.update_sync_steps(states_batch, sync_steps, marginal_logp)
+            else:
+                sync_steps, _ = self.update_sync_steps(states_batch, sync_steps)                        
             action_logits, token_logits, last_action_kv, last_token_kv = self.step(states_batch, beam_context, sync_steps)
             if action_logits is None:
                 break
         for states in states_batch:
             states.sort(key=lambda x: x.score, reverse=True)
-        return states_batch
+        if tag != None:
+            # print("marginal_logp: ", marginal_logp)
+            # print("tag: ", tag)
+            assert marginal_logp != None
+            difference = marginal_logp[:, 1:] - marginal_logp[:, :-1]
+            tag = tag[:, 1:]
+            # print("difference: ", difference)
+            surprisal = difference * tag
+            # print("surprisal_all: ", surprisal)
+            surprisal = surprisal.sum(dim=1)
+            # print("surprisal_new: ", surprisal)
+            return -surprisal, states_batch
+        else:
+            return states_batch

@@ -40,7 +40,114 @@ Here is an illustration of the syntactic generation process for the sentence "fr
 <img src="images/composition_model.gif" width="800">
 
 # README
-The README will be gradually improved over the next two weeks.
+
+## Setup
+
+Compile C++ codes.
+
+`python setup.py build_ext --inplace`
+
+## Corpus preprocessing
+
+Dataset: WikiText-103 and OpenWebText.
+
+Before pre-training, we preprocess corpus by spliting raw texts to sentences, tokenizing them, and converting them into numpy memory-mapped format.
+
+Raw text acquiring:
+
+WikiText-103: https://huggingface.co/datasets/wikitext
+Download link reference: https://developer.ibm.com/exchanges/data/all/wikitext-103/
+
+OpenWebText: https://huggingface.co/datasets/Skylion007/openwebtext
+Download link reference: https://zenodo.org/records/3834942
+
+Raw text preprocessing: `sh scripts/preprocess_corpus.sh`
+
+## Pre-training
+
+To pretrain GPST<sub>medium</sub>: `sh scripts/pretrain_GPST_medium.sh` 
+
+To pretrain GPST<sub>small</sub>: `sh scripts/pretrain_GPST_small.sh` 
+
+## Downstream Tasks
+
+### GLUE
+
+#### Data Acquiring
+
+GLUE: https://huggingface.co/datasets/nyu-mll/glue
+Download link reference: https://gluebenchmark.com/tasks/ 
+
+#### Scripts
+
+To finetune GPST<sub>medium</sub> on GLUE: `sh scripts/finetune_glue_GPST_medium.sh` 
+
+To finetune GPST<sub>small</sub> on GLUE: `sh scripts/finetune_glue_GPST_small.sh` 
+
+### Summary Tasks
+
+#### Data Acquiring and Preprocessing
+
+We acquire datasets in parquet format from huggingface and do preprocessing on them.
+
+XSum: https://huggingface.co/datasets/EdinburghNLP/xsum
+
+CNN-DailyMail: https://huggingface.co/datasets/abisee/cnn_dailymail
+
+Gigaword: https://huggingface.co/datasets/Harvard/gigaword
+
+Summary dataset preprocessing: `sh scripts/preprocess_summary_dataset.sh`
+
+#### Scripts
+
+To finetune GPST<sub>medium</sub> on Summary Tasks: `sh scripts/finetune_summary_GPST_medium.sh` 
+
+To evaluate finetuned GPST<sub>medium</sub> checkpoints: `sh scripts/evaluate_summary_GPST_medium.sh` 
+
+To finetune GPST<sub>small</sub> on Summary Tasks: `sh scripts/finetune_summary_GPST_small.sh` 
+
+To evaluate finetuned GPST<sub>small</sub> checkpoints: `sh scripts/evaluate_summary_GPST_small.sh` 
+
+### Grammar Induction
+
+#### Data Acquiring
+
+WSJ: https://paperswithcode.com/dataset/penn-treebank
+Download link reference: https://drive.google.com/file/d/1m4ssitfkWcDSxAE6UYidrP6TlUctSG2D/view
+
+We further convert training data to raw text version.
+
+#### Scripts
+
+To finetune GPST<sub>medium</sub> on Grammar Induction: `sh scripts/finetune_grammar_induction_GPST_medium.sh` 
+
+To evaluate finetuned GPST<sub>medium</sub> checkpoints: `sh scripts/evaluate_grammar_induction_GPST_medium.sh` 
+then `sh scripts/compare_trees.sh`
+
+To finetune GPST<sub>small</sub> on Grammar Induction: `sh scripts/finetune_grammar_induction_GPST_small.sh` 
+
+To evaluate finetuned GPST<sub>small</sub> checkpoints: `sh scripts/evaluate_grammar_induction_GPST_small.sh` 
+then `sh scripts/compare_trees.sh`
+
+For evaluating F1 score on constituency trees, please refer to https://github.com/harvardnlp/compound-pcfg/blob/master/compare_trees.py
+
+### Syntactic Generalization
+
+#### Data Acquiring and Preprocessing
+
+We acquire datasets in json format from github and do preprocessing on them.
+
+Syntactic Generalization test suites: https://github.com/cpllab/syntactic-generalization/tree/master/test_suites/json
+
+Syntactic Generalization test suites preprocessing: `sh scripts/preprocess_sg_dataset.sh`
+
+#### Scripts
+
+To evaluate GPST<sub>medium</sub>: `sh scripts/evaluate_sg_GPST_medium.sh`
+
+To evaluate GPST<sub>small</sub>: `sh scripts/evaluate_sg_GPST_small.sh`
+
+## Contact
 
 ## Contact
 

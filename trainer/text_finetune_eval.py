@@ -70,13 +70,15 @@ class InsidePrinter(object):
                  model,
                  dataloader,
                  tokenizer,
-                 device):
+                 device, 
+                 index):
         self.model = model
         self.model_type = modeltype
         self.dataloader = dataloader
         self.tokenizer = tokenizer
         self._sep_word = ' '
         self.device = device
+        self.index = index
     
     def dooutput(self, data_mode, epoch_num):
         self.model.eval()
@@ -85,8 +87,8 @@ class InsidePrinter(object):
             self.model.enable_gpt = False
         
         data_iterator = tqdm(self.dataloader, desc="Iteration")
-        with codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{epoch_num}_inside_ptb.txt'), mode='w', encoding='utf-8') as f_out1, \
-            codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{epoch_num}_inside_bracket.txt'), mode='w', encoding='utf-8') as f_out2:
+        with codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{self.index}_inside_ptb.txt'), mode='w', encoding='utf-8') as f_out1, \
+            codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{self.index}_inside_bracket.txt'), mode='w', encoding='utf-8') as f_out2:
             with torch.no_grad():
                 for _, inputs in enumerate(data_iterator):
                     for k, v in inputs.items():
@@ -143,7 +145,8 @@ class GenerativePrinter(object):
                  beam_searcher, 
                  dataloader,
                  tokenizer,
-                 device):
+                 device,
+                 index):
         self._beam_searcher = beam_searcher
         self.model_type = modeltype
         self.model = model
@@ -151,13 +154,14 @@ class GenerativePrinter(object):
         self.tokenizer = tokenizer
         self._sep_word = ' '
         self.device = device
+        self.index = index
 
     def dooutput(self, data_mode, epoch_num):
         self.model.eval()
         
         data_iterator = tqdm(self.dataloader, desc="Iteration")
-        with codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{epoch_num}_generative_ptb.txt'), mode='w', encoding='utf-8') as f_out1, \
-            codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{epoch_num}_generative_bracket.txt'), mode='w', encoding='utf-8') as f_out2:
+        with codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{self.index}_generative_ptb.txt'), mode='w', encoding='utf-8') as f_out1, \
+            codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{self.index}_generative_bracket.txt'), mode='w', encoding='utf-8') as f_out2:
             with torch.no_grad():
                 for _, inputs in enumerate(data_iterator):
                     for k, v in inputs.items():
@@ -209,7 +213,8 @@ class GenerativeNosyncPrinter(object):
                  beam_searcher, 
                  dataloader,
                  tokenizer,
-                 device):
+                 device,
+                 index):
         self._beam_searcher = beam_searcher
         self.model_type = modeltype
         self.model = model
@@ -217,13 +222,14 @@ class GenerativeNosyncPrinter(object):
         self.tokenizer = tokenizer
         self._sep_word = ' '
         self.device = device
+        self.index = index
 
     def dooutput(self, data_mode, epoch_num):
         self.model.eval()
         
         data_iterator = tqdm(self.dataloader, desc="Iteration")
-        with codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{epoch_num}_generativenosync_ptb.txt'), mode='w', encoding='utf-8') as f_out1, \
-            codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{epoch_num}_generativenosync_bracket.txt'), mode='w', encoding='utf-8') as f_out2:
+        with codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{self.index}_generativenosync_ptb.txt'), mode='w', encoding='utf-8') as f_out1, \
+            codecs.open(os.path.join(args.output_dir, f'wsj_'+data_mode+f'_pred_{self.index}_generativenosync_bracket.txt'), mode='w', encoding='utf-8') as f_out2:
             with torch.no_grad():
                 for _, inputs in enumerate(data_iterator):
                     for k, v in inputs.items():
@@ -381,7 +387,7 @@ class Trainer(object):
         for epoch in train_iterator:
             epoch_iterator = tqdm(data_loader, desc="Iteration")
             for step, inputs in enumerate(epoch_iterator):
-                # break
+                break
                 curr_step = step + epoch * len(data_loader)
                 if curr_step <= max_recover_step:
                     continue
@@ -488,6 +494,7 @@ if __name__ == '__main__':
     cmd.add_argument('--epochs', default=10, type=int)
     cmd.add_argument('--beam_size', default=20, type=int)
     cmd.add_argument('--max_grad_norm', default=1.0, type=float, help="Max gradient norm")
+    cmd.add_argument('--index', default=0, type=int)
 
     args = cmd.parse_args(sys.argv[1:])
     torch.set_printoptions(profile='full')
@@ -621,38 +628,33 @@ if __name__ == '__main__':
                 f'scaler{max_epoch}_{max_step}.pt']
         load_checkpoint(modules, files, args.checkpoint_dir)
 
-    # if is_master and args.valid_corpus_path is not None and args.test_corpus_path is not None:
-    #     valid_printer = None
-    #     test_printer = None
-    #     valid_dataset = TextDataset(args.valid_corpus_path)
-    #     test_dataset = TextDataset(args.test_corpus_path)
-    #     valid_dataloader = DataLoader(valid_dataset, batch_size=args.eval_batch_size, sampler=SequentialSampler(valid_dataset),
-    #                             collate_fn=collator_fn, num_workers=0)
-    #     test_dataloader = DataLoader(test_dataset, batch_size=args.eval_batch_size, sampler=SequentialSampler(test_dataset),
-    #                             collate_fn=collator_fn, num_workers=0)
-    #     if args.eval_mode == "inside":
-    #         valid_printer = InsidePrinter(modeltype=args.model_type, model=model, dataloader=valid_dataloader, tokenizer=tokenizer, device=device)
-    #         test_printer = InsidePrinter(modeltype=args.model_type, model=model, dataloader=test_dataloader, tokenizer=tokenizer, device=device)
-    #     elif args.eval_mode == "generative":
-    #         gptconfig = AutoConfig.from_pretrained(args.gpt_config_path)
-    #         beam_searcher = R2D2GenFastBeamSearcher(model, gptconfig, device, beam_size=args.beam_size)
-    #         valid_printer = GenerativePrinter(modeltype=args.model_type, model=model, beam_searcher=beam_searcher, dataloader=valid_dataloader, tokenizer=tokenizer, device=device)
-    #         test_printer = GenerativePrinter(modeltype=args.model_type, model=model, beam_searcher=beam_searcher, dataloader=test_dataloader, tokenizer=tokenizer, device=device)
-    #     elif args.eval_mode == "generativenosync":
-    #         gptconfig = AutoConfig.from_pretrained(args.gpt_config_path)
-    #         beam_searcher = R2D2GenFastEvaluator(model, gptconfig, device, beam_size=args.beam_size)
-    #         valid_printer = GenerativeNosyncPrinter(modeltype=args.model_type, model=model, beam_searcher=beam_searcher, dataloader=valid_dataloader, tokenizer=tokenizer, device=device)
-    #         test_printer = GenerativeNosyncPrinter(modeltype=args.model_type, model=model, beam_searcher=beam_searcher, dataloader=test_dataloader, tokenizer=tokenizer, device=device)
-    #     elif args.eval_mode == "parser":
-    #         valid_printer = ParserPrinter(modeltype=args.model_type, model=model, dataloader=valid_dataloader, tokenizer=tokenizer, device=device)
-    #         test_printer = ParserPrinter(modeltype=args.model_type, model=model, dataloader=test_dataloader, tokenizer=tokenizer, device=device)
-    # else:
-    #     valid_printer = None
-    #     test_printer = None
+    if is_master and args.valid_corpus_path is not None and args.test_corpus_path is not None:
+        valid_dataset = TextDataset(args.valid_corpus_path)
+        test_dataset = TextDataset(args.test_corpus_path)
+        valid_dataloader = DataLoader(valid_dataset, batch_size=args.eval_batch_size, sampler=SequentialSampler(valid_dataset),
+                                collate_fn=collator_fn, num_workers=0)
+        test_dataloader = DataLoader(test_dataset, batch_size=args.eval_batch_size, sampler=SequentialSampler(test_dataset),
+                                collate_fn=collator_fn, num_workers=0)
+        if args.eval_mode == "inside":
+            valid_printer = InsidePrinter(modeltype=args.model_type, model=model, dataloader=valid_dataloader, tokenizer=tokenizer, device=device, index=args.index)
+            test_printer = InsidePrinter(modeltype=args.model_type, model=model, dataloader=test_dataloader, tokenizer=tokenizer, device=device, index=args.index)
+        elif args.eval_mode == "generative":
+            gptconfig = AutoConfig.from_pretrained(args.gpt_config_path)
+            beam_searcher = R2D2GenFastBeamSearcher(model, gptconfig, device, beam_size=args.beam_size)
+            valid_printer = GenerativePrinter(modeltype=args.model_type, model=model, beam_searcher=beam_searcher, dataloader=valid_dataloader, tokenizer=tokenizer, device=device, index=args.index)
+            test_printer = GenerativePrinter(modeltype=args.model_type, model=model, beam_searcher=beam_searcher, dataloader=test_dataloader, tokenizer=tokenizer, device=device, index=args.index)
+        elif args.eval_mode == "generativenosync":
+            gptconfig = AutoConfig.from_pretrained(args.gpt_config_path)
+            beam_searcher = R2D2GenFastEvaluator(model, gptconfig, device, beam_size=args.beam_size)
+            valid_printer = GenerativeNosyncPrinter(modeltype=args.model_type, model=model, beam_searcher=beam_searcher, dataloader=valid_dataloader, tokenizer=tokenizer, device=device, index=args.index)
+            test_printer = GenerativeNosyncPrinter(modeltype=args.model_type, model=model, beam_searcher=beam_searcher, dataloader=test_dataloader, tokenizer=tokenizer, device=device, index=args.index)
+        elif args.eval_mode == "parser":
+            valid_printer = ParserPrinter(modeltype=args.model_type, model=model, dataloader=valid_dataloader, tokenizer=tokenizer, device=device)
+            test_printer = ParserPrinter(modeltype=args.model_type, model=model, dataloader=test_dataloader, tokenizer=tokenizer, device=device)
+    else:
+        valid_printer = None
+        test_printer = None
     
-    valid_printer = None
-    test_printer = None
-
     trainer = Trainer(ddpmodel, collator, device=device, tokenizer=tokenizer, logger=logger,
                       is_master=is_master, num_workers=args.pool_size)
 

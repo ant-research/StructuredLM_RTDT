@@ -182,3 +182,6 @@ def padding(arr_list, pad_val=0):
 
 def gpt_token(gpt_token):
     return gpt_token.replace('Ġ', '')
+
+def convert_token(gpt_token):
+    return gpt_token.replace('Ġ', ' ')

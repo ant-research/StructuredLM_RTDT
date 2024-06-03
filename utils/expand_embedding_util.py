@@ -40,3 +40,12 @@ def print_dim(model_path):
     for key, val in state_dicts.items():
         print("ori_key_value: ", key, val.shape)
 
+def extract_xsumwarpper(model_path, output_path):
+    state_dicts = torch.load(model_path, map_location=lambda a, b: a)
+    out_dict = {}
+    for key, val in state_dicts.items():
+        new_key = key.replace('model.', '')
+        out_dict[new_key] = val
+
+    torch.save(out_dict, output_path)
+
