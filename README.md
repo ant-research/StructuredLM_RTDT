@@ -37,10 +37,10 @@ Here is an illustration of the syntactic generation process for the sentence "fr
 <img src="images/GPST_generation_process.gif" width="800">
 
 ## Illustration of how the neural inside pass works
-<img src="images/composition_model.gif" width="800">
+<img src="images/composition_model.gif" width="640">
 
 ## Illustration of pruned neural inside pass
-To be done
+<img src="images/fast_inside_outside.gif" width="640">
 
 ## Illustration of parallel training of GPST
 To be done
