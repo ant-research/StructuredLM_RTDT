@@ -43,7 +43,7 @@ Here is an illustration of the syntactic generation process for the sentence "fr
 <img src="images/fast_inside_outside.gif" width="640">
 
 ## Illustration of parallel training of GPST
-To be done
+<img src="images/GPST_parallel_training.gif" width="640">
 
 
 # README
