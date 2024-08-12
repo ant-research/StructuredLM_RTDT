@@ -19,7 +19,7 @@ We explore the interpretability of the structured encoder and find that the indu
 
 "[Augmenting Transformers with Recursively Composed Multi-Grained Representations](https://openreview.net/forum?id=u859gX7ADC)". (ICLR 2024) [ReCAT](https://github.com/ant-research/StructuredLM_RTDT/tree/ReCAT)
 
-We reduce the space complexity of the deep inside-outside algorithm from cubic to linear and further reduce the parallel time complexity to approximately log N thanks to the new pruning algorithm proposed in this paper. Furthermore, we find that joint pre-training of Transformers and composition models can enhance a variety of NLP downstream tasks.
+We reduce the space complexity of the deep inside-outside algorithm from cubic to linear and further reduce the parallel time complexity to approximately log N thanks to the new pruning algorithm proposed in this paper. Furthermore, we find that joint pre-training of Transformers and composition models can enhance a variety of NLP downstream tasks. We push unsupervised constituency parsing performance to 65% and demonstrate that our model could outperform vanillar Trasformers around 5% on span-level tasks.
 
 "[Generative Pretrained Structured Transformers: Unsupervised Syntactic Language Models at Scale](http://arxiv.org/abs/2403.08293)". (ACL2024)  (current main branch)
 
